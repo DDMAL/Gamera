@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -21,19 +21,13 @@
 """The deformations module contains plugins for applying
 deformations to images."""
 
-from gamera.plugin import *
-try:
-  from gamera.core import RGBPixel
-except:
-  def RGBPixel(*args):
-    pass
-
-try:
-    from gamera.core import *
-except:
-    pass
+import sys
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Float, Int, Choice
+from gamera.enums import GREYSCALE, ONEBIT, GREY16, FLOAT, RGB
 
 import _deformation
+
 
 class wave(PluginFunction):
     """
@@ -45,19 +39,22 @@ class wave(PluginFunction):
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     args = Args([Int("amplitude"),
                  Int("period"),
-                 Choice('direction', ['Horizontal','Vertical']),
-                 Choice('waveform', ['Sinusoid','Square','Sawtooth','Triangle','Sinc']),
+                 Choice('direction', ['Horizontal', 'Vertical']),
+                 Choice('waveform', ['Sinusoid', 'Square', 'Sawtooth', 'Triangle', 'Sinc']),
                  Int('offset'),
                  Float('turbulence', default=0.0),
                  Int('random_seed', default=-1)
                 ])
-    args.list[0].rng = (0,sys.maxint)
-    args.list[1].rng = (0,sys.maxint)
+
+    args.list[0].rng = (0, sys.maxint)
+    args.list[1].rng = (0, sys.maxint)
+
     def __call__(self, amplitude, period, direction, waveform_type=0, offset=0, turbulence=0.0, random_seed=0):
         return _deformation.wave(self, amplitude, period, direction, waveform_type,
                                  offset, turbulence, random_seed)
     __call__ = staticmethod(__call__)
     doc_examples = [(RGB, 5, 10, 0, 0, 0), (RGB, 10, 5, 1, 2, 0)]
+
 
 class noise(PluginFunction):
     """
@@ -67,13 +64,15 @@ class noise(PluginFunction):
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     args = Args([Int("amplitude", range=(0, 500)),
-                 Choice('direction',['Horizontal','Vertical']),
+                 Choice('direction', ['Horizontal', 'Vertical']),
                  Int("random_seed", default=-1)
                 ])
     doc_examples = [(RGB, 10, 0)]
+
     def __call__(self, amplitude, direction, random_seed=0):
-      return _deformation.noise(self, amplitude, direction, random_seed)
+        return _deformation.noise(self, amplitude, direction, random_seed)
     __call__ = staticmethod(__call__)
+
 
 class inkrub(PluginFunction):
     """
@@ -84,9 +83,11 @@ class inkrub(PluginFunction):
     args = Args([Int("transcription_prob", range=(0, 500)),
                  Int("random_seed", default=-1)])
     doc_examples = [(GREYSCALE, 50)]
+
     def __call__(self, transcription_prob, random_seed=0):
-      return _deformation.inkrub(self, transcription_prob, random_seed)
+        return _deformation.inkrub(self, transcription_prob, random_seed)
     __call__ = staticmethod(__call__)
+
 
 class ink_diffuse(PluginFunction):
     """
@@ -95,13 +96,15 @@ class ink_diffuse(PluginFunction):
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     args = Args([Choice('diffusion_type',
-                        ["Linear Horizontal","Linear Vertical","Brownian"]),
+                        ["Linear Horizontal", "Linear Vertical", "Brownian"]),
                  Float("exponential_decay_constant"),
                  Int("random_seed", default=-1)])
     doc_examples = [(GREYSCALE, 0, 20)]
+
     def __call__(self, diffusion_type, exponential_decay_constant, random_seed=0):
-      return _deformation.ink_diffuse(self, diffusion_type, exponential_decay_constant, random_seed)
+        return _deformation.ink_diffuse(self, diffusion_type, exponential_decay_constant, random_seed)
     __call__ = staticmethod(__call__)
+
 
 class degrade_kanungo(PluginFunction):
     """Degrades an image due to a scheme proposed by Kanungo et al.
@@ -135,16 +138,17 @@ References:
   22, pp. 1209-1223 (2000)
 """
     self_type = ImageType([ONEBIT])
-    args = Args([Float('eta', range=(0.0,1.0)),
-                 Float('a0', range=(0.0,1.0)),
+    args = Args([Float('eta', range=(0.0, 1.0)),
+                 Float('a0', range=(0.0, 1.0)),
                  Float('a'),
-                 Float('b0', range=(0.0,1.0)),
+                 Float('b0', range=(0.0, 1.0)),
                  Float('b'),
                  Int('k', default=2),
                  Int('random_seed', default=0)])
     return_type = ImageType([ONEBIT])
     author = "Christoph Dalitz"
     doc_examples = [(ONEBIT, 0.0, 0.5, 0.5, 0.5, 0.5, 2, 0)]
+
 
 class white_speckles(PluginFunction):
     """Adds white speckles to an image. This is supposed to emulate
@@ -184,10 +188,10 @@ References:
   pp. 753-766 (2008)
 """
     self_type = ImageType([ONEBIT])
-    args = Args([Float('p', range=(0.0,1.0)),
+    args = Args([Float('p', range=(0.0, 1.0)),
                  Int('n'),
                  Int('k', default=2),
-                 Choice('connectivity', ['rook','bishop','king'], default=2),
+                 Choice('connectivity', ['rook', 'bishop', 'king'], default=2),
                  Int('random_seed', default=0)])
     return_type = ImageType([ONEBIT], 'white_speckles')
     author = "Christoph Dalitz"
@@ -203,11 +207,10 @@ References:
 
 
 class DefModule(PluginModule):
-    cpp_headers=["deformations.hpp"]
+    cpp_headers = ["deformations.hpp"]
     category = "Deformations"
     functions = [noise, inkrub, wave, ink_diffuse,
                  degrade_kanungo, white_speckles]
     author = "Albert Brzeczko"
     url = "http://gamera.sourceforge.net/"
 module = DefModule()
-
