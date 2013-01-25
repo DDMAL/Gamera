@@ -11,15 +11,17 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
 import array
-from gamera.plugin import *
-import _features
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Check, FloatVector, Class
+from gamera.enums import ONEBIT
+
 
 class Feature(PluginFunction):
     self_type = ImageType([ONEBIT])
@@ -27,49 +29,52 @@ class Feature(PluginFunction):
     feature_function = True
     doc_examples = [(ONEBIT,)]
 
+
 class black_area(Feature):
     """
     The simplest of all feature-generating functions, ``black_area``
     simply returns the number of black pixels.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |       |     X    |   X    |
     +-------+----------+--------+
-    
+
     .. warning:: This feature is not scale invariant.
     """
     pass
+
 
 class moments(Feature):
     """
     Returns *moments* of the image.
 
-    The first two elements of the returned ``FloatVector`` are the 
+    The first two elements of the returned ``FloatVector`` are the
     center of gravity on *x* and *y* axis normalized by width and height,
-    respectively. The following seven entries are the 
+    respectively. The following seven entries are the
     *normalized central moments* (*u20,u02,u11,u30,u12,u21,u03*). For their
     definition, see Gonzalez, Woods: \"Digital Image Processing\",
     Prentice Hall, second edition (2002).
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |        |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=9)
 
+
 class nholes(Feature):
     """
     Computes for each row or column the average number of white runs not
-	touching the border. From these values, the average over all rows and
-	all columns is returned.
+        touching the border. From these values, the average over all rows and
+        all columns is returned.
 
     The elements of the returned ``FloatVector`` are:
 
@@ -77,14 +82,15 @@ class nholes(Feature):
     1. horizontal
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |   X    |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=2)
+
 
 class nholes_extended(Feature):
     """
@@ -100,14 +106,15 @@ class nholes_extended(Feature):
       horizonal ``nholes`` for each of the strips in order top to bottom.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |        |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=8)
+
 
 class volume(Feature):
     """
@@ -115,28 +122,30 @@ class volume(Feature):
     of the image.  Result in range (0, 1].
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |   X    |
     +-------+----------+--------+
     """
     pass
 
+
 class area(Feature):
     """
     The area of the bounding box (i.e. *nrows* * *ncols*).
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |       |          |   X    |
     +-------+----------+--------+
     """
     pass
+
 
 class aspect_ratio(Feature):
     """
@@ -145,15 +154,16 @@ class aspect_ratio(Feature):
     This feature is scale invariant.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |   X    |
     +-------+----------+--------+
     """
     pass
-    
+
+
 class nrows_feature(Feature):
     """
     Simply the number of rows. As this feature is *not* scale
@@ -161,14 +171,15 @@ class nrows_feature(Feature):
     different size.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |       |          |   X    |
     +-------+----------+--------+
     """
     pass
+
 
 class ncols_feature(Feature):
     """
@@ -177,19 +188,20 @@ class ncols_feature(Feature):
     different size.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |       |          |   X    |
     +-------+----------+--------+
     """
     pass
 
+
 class compactness(Feature):
     """
     Compactness is the volume to surface ratio. Highly ornate connected
-    components have a low compactness, whereas a perfect circle has a 
+    components have a low compactness, whereas a perfect circle has a
     high compactness. The present implementation of this feature in
     Gamera does however not return the compactness, but its *inverse*,
     i.e. the surface to volume ratio.
@@ -204,29 +216,31 @@ class compactness(Feature):
     This is currently not corrected for.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |       |    X     |   X    |
     +-------+----------+--------+
     """
     pass
-    
+
+
 class volume16regions(Feature):
     """
     Divides the image into a 4 x 4 grid of 16 regions and calculates
     the volume within each. This feature is also known as \"zoning\" method.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |        |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=16)
+
 
 class volume64regions(Feature):
     """
@@ -234,14 +248,15 @@ class volume64regions(Feature):
     the volume within each. This feature is also known as \"zoning\" method.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |        |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=64)
+
 
 class zernike_moments(Feature):
     """
@@ -265,15 +280,16 @@ class zernike_moments(Feature):
     under the used normalization scheme.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |    X     |   X    |
     +-------+----------+--------+
     """
     author = "Robert Butz and Christoph Dalitz"
     return_type = FloatVector(length=14)
+
 
 class skeleton_features(Feature):
     """
@@ -282,7 +298,7 @@ class skeleton_features(Feature):
     which guarantees that the pixels of the resulting skeleton are
     never more than 4-connected.  Then, this skeleton is analysed for
     a number of properties:
-    
+
     0. Number of X joints (4-connected pixels)
     1. Number of T joints (3-connected pixels)
     2. Average number of bend points (pixels which do not form a horizontal or
@@ -292,14 +308,15 @@ class skeleton_features(Feature):
     5. Number of *y*-axis crossings with respect to the *y*-axis through the center of mass
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |   X    |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=6)
+
 
 class top_bottom(Feature):
     """
@@ -308,14 +325,15 @@ class top_bottom(Feature):
     the second feature is the last row containing a black pixel.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |   X    |
     +-------+----------+--------+
     """
     return_type = FloatVector(length=2)
+
 
 class diagonal_projection(Feature):
     """
@@ -323,9 +341,9 @@ class diagonal_projection(Feature):
     rotated projections at +/- 45 degrees.
 
     +---------------------------+
-    | **Invariant to:**         |  
+    | **Invariant to:**         |
     +-------+----------+--------+
-    | scale | rotation | mirror | 
+    | scale | rotation | mirror |
     +-------+----------+--------+
     |   X   |          |        |
     +-------+----------+--------+
@@ -339,7 +357,7 @@ class generate_features(PluginFunction):
     Generates features for the image by calling a number of feature
     functions and storing the results in the image's ``features``
     member variable (a Python ``array``).
-    
+
     *features*
       Optional.  A list of feature function names.  If not given, the
       previously set feature functions will be used.  If none were
@@ -358,26 +376,28 @@ class generate_features(PluginFunction):
     args = Args([Class('features', list), Check('force')])
     return_type = None
     cache = {}
+
     def __call__(self, features=None, force=False):
-      if features is None:
-         features = self.get_feature_functions()
-      if self.feature_functions == features and not force:
-         return
-      self.feature_functions = features
-      features, num_features = features
-      if len(self.features) != num_features:
-          if not generate_features.cache.has_key(num_features):
-              generate_features.cache[num_features] = [0] * num_features
-          self.features = array.array('d', generate_features.cache[num_features])
-      offset = 0
-      for name, function in features:
-          function.__call__(self, offset)
-          offset += function.return_type.length
+        if features is None:
+            features = self.get_feature_functions()
+        if self.feature_functions == features and not force:
+            return
+        self.feature_functions = features
+        features, num_features = features
+        if len(self.features) != num_features:
+            if not generate_features.cache.has_key(num_features):
+                generate_features.cache[num_features] = [0] * num_features
+            self.features = array.array('d', generate_features.cache[num_features])
+        offset = 0
+        for name, function in features:
+            function.__call__(self, offset)
+            offset += function.return_type.length
     __call__ = staticmethod(__call__)
+
 
 class FeaturesModule(PluginModule):
     category = "Features"
-    cpp_headers=["features.hpp"]
+    cpp_headers = ["features.hpp"]
     functions = [black_area, moments, nholes,
                  nholes_extended, volume, area,
                  aspect_ratio, nrows_feature, ncols_feature, compactness,
@@ -387,6 +407,7 @@ class FeaturesModule(PluginModule):
     author = "Michael Droettboom and Karl MacMillan"
     url = "http://gamera.sourceforge.net/"
 module = FeaturesModule()
+
 
 def get_features_length(features):
     """
@@ -398,23 +419,24 @@ def get_features_length(features):
     ff = core.ImageBase.get_feature_functions(features)
     return ff[1]
 
-def generate_features_list(list, features='all'):
-   """
-   Generate features on a list of images.
 
-   *features*
-     Follows the same rules as for generate_features_.
-   """
-   from gamera import core, util
-   ff = core.Image.get_feature_functions(features)
-   progress = util.ProgressFactory("Generating features...", len(list) / 10)
-   try:
-      for i, glyph in enumerate(list):
-         glyph.generate_features(ff)
-         if i % 10 == 0:
-             progress.step()
-   finally:
-       progress.kill()
+def generate_features_list(list, features='all'):
+    """
+    Generate features on a list of images.
+
+    *features*
+      Follows the same rules as for generate_features_.
+    """
+    from gamera import core, util
+    ff = core.Image.get_feature_functions(features)
+    progress = util.ProgressFactory("Generating features...", len(list) / 10)
+    try:
+        for i, glyph in enumerate(list):
+            glyph.generate_features(ff)
+            if i % 10 == 0:
+                progress.step()
+    finally:
+        progress.kill()
 
 generate_features = generate_features()
 
