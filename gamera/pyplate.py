@@ -258,7 +258,6 @@ class IfTemplateNode(TemplateNode):
 
     def execute(self, stream, data):
         try:
-            print self.expression
             x = eval(self.expression, globals(), data)
         except Exception, e:
             self.parent.parser_exception(self.expression, e)
