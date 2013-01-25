@@ -17,12 +17,27 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from random import randint
 import sys
+from random import randint
+
 from gamera.plugin import PluginFunction, PluginModule
+from gamera.plugins import string_io
 from gamera.args import ImageType, Args, Float, FloatPoint, Point, Pixel, Int, Choice, String, Check
-from gamera.core import Image, Dim, RGBPixel
 from gamera.enums import GREYSCALE, ONEBIT, FLOAT, RGB, ALL, DENSE
+
+# This is because we may not be able to import RGBPixel
+# if Gamera core has not compiled yet.
+try:
+    from gamera.core import RGBPixel, Image, Dim
+except ImportError:
+    def RGBPixel(*args):
+        pass
+
+    def Image(*args):
+        pass
+
+    def Dim(*args):
+        pass
 
 import _draw
 
@@ -195,8 +210,6 @@ class draw_filled_rect(PluginFunction):
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
-        from random import randint
-        from gamera.core import Image, Dim
         image = Image((0, 0), Dim(100, 100), RGB, DENSE)
         for i in range(10):
             image.draw_filled_rect((randint(0, 100), randint(0, 100)),
@@ -241,8 +254,6 @@ class draw_bezier(PluginFunction):
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
-        from random import randint
-        from gamera.core import Image, Dim
         image = Image((0, 0), Dim(100, 100), RGB, DENSE)
         for i in range(10):
             image.draw_bezier((randint(0, 100), randint(0, 100)),
@@ -290,8 +301,6 @@ class draw_circle(PluginFunction):
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
-        from random import randint
-        from gamera.core import Image, Dim
         image = Image((0, 0), Dim(100, 100), RGB, DENSE)
         for i in range(10):
             image.draw_circle((randint(0, 100), randint(0, 100)),
@@ -373,8 +382,6 @@ class draw_text(PluginFunction):
 
     def __call__(self, p, text, color, size=10, font_family=0,
                  italic=False, bold=False, halign=0):
-        from gamera.core import Dim, RGB, ONEBIT, Image
-        from gamera.plugins import string_io
         try:
             import wx
         except ImportError:
@@ -445,8 +452,6 @@ class draw_text(PluginFunction):
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
-        from random import randint
-        from gamera.core import Image, Dim
         image = Image((0, 0), Dim(320, 300), RGB, DENSE)
 
         # These are some various Unicode encoded names of different
