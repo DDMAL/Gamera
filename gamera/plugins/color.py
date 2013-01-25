@@ -12,25 +12,29 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
-
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Class
+from gamera.enums import RGB, FLOAT, GREYSCALE, ONEBIT
 import _color
+
 
 class ExtractFloatChannel(PluginFunction):
     self_type = ImageType([RGB])
     return_type = ImageType([FLOAT])
     doc_examples = [(RGB,)]
 
+
 class ExtractGreyscaleChannel(PluginFunction):
     self_type = ImageType([RGB])
     return_type = ImageType([FLOAT])
     doc_examples = [(RGB,)]
+
 
 class hue(ExtractFloatChannel):
     """
@@ -40,12 +44,14 @@ class hue(ExtractFloatChannel):
     """
     pass
 
+
 class saturation(ExtractFloatChannel):
     """
     Returns a FLOAT image where each pixel is a saturation value in
     HSV space in range [0, 1].
     """
     pass
+
 
 class value(ExtractFloatChannel):
     """
@@ -54,6 +60,7 @@ class value(ExtractFloatChannel):
     space.
     """
     pass
+
 
 class cie_x(ExtractFloatChannel):
     """
@@ -64,6 +71,7 @@ class cie_x(ExtractFloatChannel):
     """
     pass
 
+
 class cie_y(ExtractFloatChannel):
     """
     Returns a FLOAT image where each pixel is a *y* value in the `CIE
@@ -72,6 +80,7 @@ class cie_y(ExtractFloatChannel):
     .. __: http://www.isc.tamu.edu/~astro/color/cie_xyz1964.html
     """
     pass
+
 
 class cie_z(ExtractFloatChannel):
     """
@@ -82,9 +91,10 @@ class cie_z(ExtractFloatChannel):
     """
     pass
 
+
 class cie_Lab_L(ExtractFloatChannel):
     """
-    Returns a FLOAT image where each pixel is an *L* value in the 
+    Returns a FLOAT image where each pixel is an *L* value in the
     CIE L*a*b* color space. For an introduction to the different color
     spaces, see A. Ford and A. Roberts: `Color Space Concersions`__ (1998).
 
@@ -93,10 +103,11 @@ class cie_Lab_L(ExtractFloatChannel):
     .. __: http://www.poynton.com/PDFs/coloureq.pdf
     """
     pass
+
 
 class cie_Lab_a(ExtractFloatChannel):
     """
-    Returns a FLOAT image where each pixel is an *a* value in the 
+    Returns a FLOAT image where each pixel is an *a* value in the
     CIE L*a*b* color space. For an introduction to the different color
     spaces, see A. Ford and A. Roberts: `Color Space Concersions`__ (1998).
 
@@ -105,10 +116,11 @@ class cie_Lab_a(ExtractFloatChannel):
     .. __: http://www.poynton.com/PDFs/coloureq.pdf
     """
     pass
+
 
 class cie_Lab_b(ExtractFloatChannel):
     """
-    Returns a FLOAT image where each pixel is a *b* value in the 
+    Returns a FLOAT image where each pixel is a *b* value in the
     CIE L*a*b* color space. For an introduction to the different color
     spaces, see A. Ford and A. Roberts: `Color Space Concersions`__ (1998).
 
@@ -117,6 +129,7 @@ class cie_Lab_b(ExtractFloatChannel):
     .. __: http://www.poynton.com/PDFs/coloureq.pdf
     """
     pass
+
 
 class cyan(ExtractGreyscaleChannel):
     """
@@ -125,12 +138,14 @@ class cyan(ExtractGreyscaleChannel):
     """
     pass
 
+
 class magenta(ExtractGreyscaleChannel):
     """
     Returns a GREYSCALE image where each pixel is the magenta
     component of the RGB original.
     """
     pass
+
 
 class yellow(ExtractGreyscaleChannel):
     """
@@ -139,12 +154,14 @@ class yellow(ExtractGreyscaleChannel):
     """
     pass
 
+
 class red(ExtractGreyscaleChannel):
     """
     Returns a GREYSCALE image where each pixel is the red component of
     the RGB original.
     """
     pass
+
 
 class green(ExtractGreyscaleChannel):
     """
@@ -153,12 +170,14 @@ class green(ExtractGreyscaleChannel):
     """
     pass
 
+
 class blue(ExtractGreyscaleChannel):
     """
     Returns a GREYSCALE image where each pixel is the blue component
     of the RGB original.
     """
     pass
+
 
 class false_color(PluginFunction):
     """
@@ -170,6 +189,7 @@ class false_color(PluginFunction):
     self_type = ImageType([FLOAT, GREYSCALE])
     return_type = ImageType([RGB], "false_color")
     doc_examples = [(GREYSCALE,)]
+
 
 class colors_to_labels(PluginFunction):
     """
@@ -197,8 +217,9 @@ class colors_to_labels(PluginFunction):
     return_type = ImageType([ONEBIT])
     args = Args([Class("rgb_to_label", dict)])
     author = "Christoph Dalitz and Hasan Yildiz"
+
     def __call__(self, dict=None):
-      return _color.colors_to_labels(self, dict)
+        return _color.colors_to_labels(self, dict)
     __call__ = staticmethod(__call__)
 
 
