@@ -43,31 +43,28 @@ init_gamera - parse the gamera options and load all of the plugins.
 """
 
 # Python standard library
-from array import array
-from types import *
+import sys
+import types
+import os
 
 # import the classification states
 try:
     from gameracore import UNCLASSIFIED, AUTOMATIC, HEURISTIC, MANUAL
 except ImportError:
     raise ImportError("Couldn't import the core of Gamera.  Are you trying to start the GUI from the root of the Gamera source tree?  This confuses the Python module loading mechanism.")
-# import the pixel types
-from gameracore import ONEBIT, GREYSCALE, GREY16, RGB, FLOAT, COMPLEX
-from gamera.enums import ALL, NONIMAGE
-# import the storage types
-from gameracore import DENSE, RLE
-# import some of the basic types
-from gameracore import ImageData, Size, Dim, Point, \
-     FloatPoint, Rect, Region, RegionMap, ImageInfo, RGBPixel
-# import confidence types
-from gameracore import CONFIDENCE_DEFAULT, CONFIDENCE_KNNFRACTION, CONFIDENCE_LINEARWEIGHT, CONFIDENCE_INVERSEWEIGHT, CONFIDENCE_NUN, CONFIDENCE_NNDISTANCE, CONFIDENCE_AVGDISTANCE
-# import gamera.gameracore for subclassing
-import gameracore
-from gamera.gui import has_gui
 
-# from gamera.classify import *
-import paths, util    # Gamera-specific
-from config import config
+
+from gameracore import Image, SubImage, Cc, MlCc
+from gameracore import DENSE, RLE
+
+from gamera.config import config
+from gamera.enums import ONEBIT, GREYSCALE, FLOAT, COMPLEX, ALL, GREY16, RGB
+from gamera.gameracore import CONFIDENCE_DEFAULT, CONFIDENCE_KNNFRACTION, CONFIDENCE_LINEARWEIGHT, CONFIDENCE_INVERSEWEIGHT, CONFIDENCE_NUN, CONFIDENCE_NNDISTANCE, CONFIDENCE_AVGDISTANCE
+from gamera.gameracore import ImageData, Size, Dim, Point, FloatPoint, Rect, Region, RegionMap, ImageInfo, RGBPixel
+from gamera.gui import has_gui
+from gamera import paths
+from gamera import util
+
 
 class SegmentationError(Exception):
     pass
@@ -75,7 +72,7 @@ class SegmentationError(Exception):
 ######################################################################
 
 
-def load_image(filename, compression = DENSE):
+def load_image(filename, compression=DENSE):
     """**load_image** (FileOpen *filename*, Choice *storage_format* = ``DENSE``)
 
  Load an image from the given filename.  At present, TIFF and PNG files are
@@ -86,7 +83,6 @@ def load_image(filename, compression = DENSE):
 
  .. __: image_types.html#storage-formats"""
     from gamera import plugin
-    import os.path
     methods = plugin.methods_flat_category("File")
     methods = [y for x, y in methods if x.startswith("load") and x != "load_image"]
 
@@ -123,7 +119,6 @@ def save_image(image, filename):
  determined from the extension.
  """
     from gamera import plugin
-    import os.path
     methods = plugin.methods_flat_category("File")
     methods = [y for x, y in methods if x.startswith("save") and x != "save_image"]
 
@@ -142,9 +137,11 @@ def save_image(image, filename):
     from gamera.plugins import _tiff_support
     _tiff_support.save_tiff(image, filename)
 
+
 def nested_list_to_image(l, t=-1):
     from gamera.plugins import image_utilities
     return image_utilities.nested_list_to_image(l, t)
+
 
 def image_info(filename):
     """ImageInfo **image_info** (FileOpen *filename*)
@@ -156,7 +153,7 @@ def image_info(filename):
  the bit-depth, resolution, size, etc.
 
  .. __: gamera.core.ImageInfo.html"""
-    import tiff_support, png_support
+    from gamera.plugins import tiff_support, png_support
     try:
         return tiff_support.tiff_info(filename)
     except RuntimeError:
@@ -164,6 +161,7 @@ def image_info(filename):
             return png_support.PNG_info(filename)
         except RuntimeError:
             raise IOError("File is not a PNG or TIFF file")
+
 
 def display_multi(list):
     """**display_multi** (ImageList *list*)
@@ -182,6 +180,7 @@ def display_multi(list):
 # Used to cache the list of all features
 all_features = None
 
+
 class ImageBase:
     """Base class for all of the image objects. This class contains
     common functionality for all of the image types including
@@ -193,8 +192,10 @@ class ImageBase:
     class Properties(dict):
         def __getitem__(self, attr):
             return dict.get(self, attr, None)
+
         def __getattr__(self, attr):
             return self.__getitem__(attr)
+
         def __setattr__(self, attr, value):
             return dict.__setitem__(self, attr, value)
 
@@ -356,7 +357,7 @@ class ImageBase:
            A ``.``-delimited class name."""
         if util.is_string_or_unicode(id_name):
             id_name = [(1.0, id_name)]
-        elif type(id_name) != ListType:
+        elif type(id_name) != types.ListType:
             raise TypeError("id_name must be a string or a list")
         self.id_name = id_name
         self.confidence = {}
@@ -383,7 +384,7 @@ class ImageBase:
            A ``.``-delimited class name."""
         if util.is_string_or_unicode(id_name):
             id_name = [(0.0, id_name)]
-        elif type(id_name) != ListType:
+        elif type(id_name) != types.ListType:
             raise TypeError("id_name must be a string or a list")
         self.id_name = id_name
         self.classification_state = AUTOMATIC
@@ -408,7 +409,7 @@ class ImageBase:
            A ``.``-delimited class name."""
         if util.is_string_or_unicode(id_name):
             id_name = [(0.5, id_name)]
-        elif type(id_name) != ListType:
+        elif type(id_name) != types.ListType:
             raise TypeError("id_name must be a string or a list")
         self.id_name = id_name
         self.confidence = {}
@@ -559,7 +560,7 @@ class ImageBase:
         Returns a string containing the Gamera XML representation of the image.
         (See the Gamera XML DTD in ``misc/gamera.dtd`` in the source distribution.)
         """
-        import gamera_xml
+        from gamera import gamera_xml
         return gamera_xml.WriteXML(glyphs=[self]).write_stream(stream)
 
     def to_xml_filename(self, filename):
@@ -567,7 +568,7 @@ class ImageBase:
         Saves the Gamera XML representation of the image to the given *filename*.
         (See the Gamera XML DTD in ``misc/gamera.dtd`` in the source distribution.)
         """
-        import gamera_xml
+        from gamera import gamera_xml
         return gamera_xml.WriteXML(glyphs=[self]).write_filename(filename)
 
     def set_property(self, name, value):
@@ -578,11 +579,11 @@ class ImageBase:
 
 
 ######################################################################
-class Image(gameracore.Image, ImageBase):
+class Image(Image, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        gameracore.Image.__init__(self, *args, **kwargs)
-    __init__.__doc__ = gameracore.Image.__doc__
+        Image.__init__(self, *args, **kwargs)
+    __init__.__doc__ = Image.__doc__
 
     def __del__(self):
         if self._display:
@@ -590,11 +591,11 @@ class Image(gameracore.Image, ImageBase):
 
 
 ######################################################################
-class SubImage(gameracore.SubImage, ImageBase):
+class SubImage(SubImage, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        gameracore.SubImage.__init__(self, *args, **kwargs)
-    __init__.__doc__ = gameracore.SubImage.__doc__
+        SubImage.__init__(self, *args, **kwargs)
+    __init__.__doc__ = SubImage.__doc__
 
     def __del__(self):
         if self._display:
@@ -602,11 +603,11 @@ class SubImage(gameracore.SubImage, ImageBase):
 
 
 ######################################################################
-class Cc(gameracore.Cc, ImageBase):
+class Cc(Cc, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        gameracore.Cc.__init__(self, *args, **kwargs)
-    __init__.__doc__ = gameracore.Cc.__doc__
+        Cc.__init__(self, *args, **kwargs)
+    __init__.__doc__ = Cc.__doc__
 
     def __del__(self):
         if self._display:
@@ -631,75 +632,80 @@ class Cc(gameracore.Cc, ImageBase):
         self._display.focus(self)
         self.last_display = "context"
 
-class MlCc(gameracore.MlCc, ImageBase):
+
+class MlCc(MlCc, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        gameracore.MlCc.__init__(self, *args, **kwargs)
-    __init__.__doc__ = gameracore.MlCc.__doc__
+        MlCc.__init__(self, *args, **kwargs)
+    __init__.__doc__ = MlCc.__doc__
 
     def __del__(self):
         if self._display:
             self._display.close()
 
+
 # this is a convenience function for using in a console
 _gamera_initialised = False
+
+
 def _init_gamera():
+    from gamera import plugin
+    from gamera.args import ImageType, FileOpen, FileSave, NoneDefault, Args, String, Float, Choice, Check, Point
+    from gamera import gamera_xml
     global _gamera_initialised
     if _gamera_initialised:
         return
     _gamera_initialised = True
-    import plugin, gamera_xml, sys
-    from gamera.args import NoneDefault
     # Create the default functions for the menupl
     for method in (
        plugin.PluginFactory(
-          "load_image", "File", plugin.ImageType(ALL, "image"),
-          plugin.ImageType(ALL), plugin.Args([plugin.FileOpen("filename", extension=util.load_image_file_extension_finder)])),
+          "load_image", "File", ImageType(ALL, "image"),
+          ImageType(ALL), Args([FileOpen("filename", extension=util.load_image_file_extension_finder)])),
        plugin.PluginFactory(
           "save_image", "File", None,
-          plugin.ImageType(ALL), plugin.Args([plugin.FileSave("filename", extension=util.save_image_file_extension_finder)])),
+          ImageType(ALL), Args([FileSave("filename", extension=util.save_image_file_extension_finder)])),
        plugin.PluginFactory(
-          "display", "Displaying", None, plugin.ImageType(ALL), None),
+          "display", "Displaying", None, ImageType(ALL), None),
        plugin.PluginFactory(
-          "display_ccs", "Displaying", None, plugin.ImageType([ONEBIT]),
+          "display_ccs", "Displaying", None, ImageType([ONEBIT]),
           None),
        plugin.PluginFactory(
           "display_false_color", "Displaying", None,
-          plugin.ImageType([GREYSCALE, FLOAT]),
+          ImageType([GREYSCALE, FLOAT]),
           None),
        plugin.PluginFactory(
           "classify_manual", "Classification", None,
-          plugin.ImageType([ONEBIT]), plugin.Args([plugin.String("id")])),
+          ImageType([ONEBIT]), Args([String("id")])),
        plugin.PluginFactory(
           "classify_heuristic", "Classification", None,
-          plugin.ImageType([ONEBIT]), plugin.Args([plugin.String("id")])),
+          ImageType([ONEBIT]), Args([String("id")])),
        plugin.PluginFactory(
           "classify_automatic", "Classification", None,
-          plugin.ImageType([ONEBIT]), plugin.Args([plugin.String("id")])),
+          ImageType([ONEBIT]), Args([String("id")])),
        plugin.PluginFactory(
           "unclassify", "Classification", None,
-          plugin.ImageType([ONEBIT]), None),
+          ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "get_main_id", "Classification", plugin.String("id"),
-          plugin.ImageType([ONEBIT]), None),
+          "get_main_id", "Classification", String("id"),
+          ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "get_confidence", "Classification", plugin.Float("confidence"),
-          plugin.ImageType([ONEBIT]), plugin.Args([plugin.Choice("confidence_type", default=NoneDefault)])),
+          "get_confidence", "Classification", Float("confidence"),
+          ImageType([ONEBIT]), Args([Choice("confidence_type", default=NoneDefault)])),
        plugin.PluginFactory(
-          "has_id_name", "Classification", plugin.Check("result"),
-          plugin.ImageType([ONEBIT]), plugin.Args([plugin.String("id")])),
+          "has_id_name", "Classification", Check("result"),
+          ImageType([ONEBIT]), Args([String("id")])),
        plugin.PluginFactory(
           #"subimage", "Utility", plugin.Check("result"),
-          "subimage", "Utility", plugin.ImageType(ALL),
-          plugin.ImageType(ALL), plugin.Args([plugin.Point("upper_left"),
-                                              plugin.Point("lower_right")])),
+          "subimage", "Utility", ImageType(ALL),
+          ImageType(ALL), Args([Point("upper_left"),
+                                              Point("lower_right")])),
        plugin.PluginFactory(
-          "to_xml", "XML", plugin.String('xml'),
-          plugin.ImageType([ONEBIT]), None),
+          "to_xml", "XML", String('xml'),
+          ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "to_xml_filename", "XML", None, plugin.ImageType([ONEBIT]),
-          plugin.Args([
-       plugin.FileSave("filename", extension=gamera_xml.extensions)]))
+          "to_xml_filename", "XML", None, ImageType([ONEBIT]),
+          Args([
+       FileSave("filename", extension=gamera_xml.extensions)]))
        ):
         method.register()
     try:
@@ -709,7 +715,7 @@ def _init_gamera():
     paths.import_directory(paths.plugins, globals(), locals(), verbose)
     sys.path.append(".")
 
-import sys
+
 if sys.platform == 'win32':
     # Windows doesn't generally keep the console window open, making it difficult to
     # diagnose fatal errors.  This catch-all should help.
@@ -725,7 +731,7 @@ if sys.platform == 'win32':
                 traceback.print_exc()
                 print
                 print "Press <ENTER> to exit."
-                x = raw_input()
+                raw_input()
                 sys.exit(1)
 else:
     init_gamera = _init_gamera
