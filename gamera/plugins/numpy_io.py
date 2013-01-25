@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -18,7 +18,10 @@
 """Data transfer between Gamera and Numpy.
 """
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Class
+from gamera.enums import RGB, GREYSCALE, GREY16, FLOAT, DENSE, COMPLEX, ONEBIT, ALL
+
 from gamera import config
 
 try:
@@ -31,23 +34,25 @@ except ImportError:
     if verbose:
         print ('Info: numpy could not be imported.')
 else:
-    _typecodes = {RGB       : n.dtype('uint8'),
-                  GREYSCALE : n.dtype('uint8'),
-                  GREY16    : n.dtype('uint32'),
-                  ONEBIT    : n.dtype('uint16'),
-                  FLOAT     : n.dtype('float64'),
-                  COMPLEX   : n.dtype('complex128') }
-    _inverse_typecodes = { n.dtype('uint8')     : GREYSCALE,
-                           n.dtype('uint32')    : GREY16,
-                           n.dtype('uint16')    : ONEBIT,
-                           n.dtype('float64')   : FLOAT,
-                           n.dtype('complex128') : COMPLEX } 
-        
+    _typecodes = {RGB: n.dtype('uint8'),
+                  GREYSCALE: n.dtype('uint8'),
+                  GREY16: n.dtype('uint32'),
+                  ONEBIT: n.dtype('uint16'),
+                  FLOAT: n.dtype('float64'),
+                  COMPLEX: n.dtype('complex128')
+                }
+    _inverse_typecodes = {n.dtype('uint8'): GREYSCALE,
+                           n.dtype('uint32'): GREY16,
+                           n.dtype('uint16'): ONEBIT,
+                           n.dtype('float64'): FLOAT,
+                           n.dtype('complex128'): COMPLEX
+                        }
+
     class from_numpy(PluginFunction):
         """
         Instantiates a Gamera image from a Numeric multi-dimensional
         array *array*.
-            
+
         The array must be one of the following types and will map to
         the corresponding Gamera image type:
 
@@ -75,7 +80,7 @@ else:
         following:
 
         .. code:: Python
-        
+
           from gamera.plugins import numpy_io
           image = numpy_io.from_numpy(array)
         """
@@ -83,6 +88,7 @@ else:
         args = Args([Class("array")])
         return_type = ImageType(ALL)
         pure_python = True
+
         def __call__(array, offset=(0, 0)):
             from gamera.plugins import _string_io
             from gamera.core import Dim
@@ -138,7 +144,7 @@ else:
         an image, you can use numpy, as in the following  example:
 
         .. code:: Python
-        
+
           from gamera.plugins import numpy_io
           from numpy import fft
           nparr = image.to_numpy()
@@ -148,6 +154,7 @@ else:
         self_type = ImageType(ALL)
         return_type = Class("array")
         pure_python = True
+
         def __call__(image):
             from gamera.plugins import _string_io
             pixel_type = image.data.pixel_type
@@ -164,26 +171,31 @@ else:
             array = image.to_numpy()
             image0 = from_numpy(array)
             return [image, image0]
+
         def __doc_example2__(images):
             image = images[GREYSCALE]
             array = image.to_numpy()
             image0 = from_numpy(array)
             return [image, image0]
+
         def __doc_example4__(images):
             image = images[ONEBIT]
             array = image.to_numpy()
             image0 = from_numpy(array)
             return [image, image0]
+
         def __doc_example5__(images):
             image = images[FLOAT]
             array = image.to_numpy()
             image0 = from_numpy(array)
             return [image, image0]
+
         def __doc_example6__(images):
             image = images[COMPLEX]
             array = image.to_numpy()
             image0 = from_numpy(array)
             return [image, image0]
+
         doc_examples = [__doc_example1__,
                         __doc_example2__,
                         __doc_example4__,

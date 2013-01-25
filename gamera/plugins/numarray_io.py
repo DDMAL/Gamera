@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -18,8 +18,10 @@
 """Data transfer between Gamera and numarray.
 """
 
-from gamera.plugin import *
-from gamera.util import warn_deprecated
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Class
+from gamera.enums import RGB, GREYSCALE, GREY16, FLOAT, DENSE, COMPLEX, ONEBIT, ALL
+
 from gamera import config
 
 try:
@@ -32,25 +34,28 @@ except ImportError:
     if verbose:
         print ('Info: numpy.numarray could not be imported')
 else:
-    _typecodes = {RGB       : n.UInt8,
-                  GREYSCALE : n.UInt8,
-                  GREY16    : n.UInt32,
-                  ONEBIT    : n.UInt16,
-                  FLOAT     : n.Float64,
-                  COMPLEX   : n.Complex64 }
-    _inverse_typecodes = { n.UInt8     : GREYSCALE,
-                           n.UInt32    : GREY16,
-                           n.UInt16    : ONEBIT,
-                           n.Float64   : FLOAT,
-                           n.Complex64 : COMPLEX } 
-        
+    _typecodes = {RGB: n.UInt8,
+                  GREYSCALE: n.UInt8,
+                  GREY16: n.UInt32,
+                  ONEBIT: n.UInt16,
+                  FLOAT: n.Float64,
+                  COMPLEX: n.Complex64
+                  }
+
+    _inverse_typecodes = {n.UInt8: GREYSCALE,
+                           n.UInt32: GREY16,
+                           n.UInt16: ONEBIT,
+                           n.Float64: FLOAT,
+                           n.Complex64: COMPLEX
+                        }
+
     class from_numarray(PluginFunction):
         """
         Instantiates a Gamera image from a numarray multi-dimensional
         array *array*.
 
         Optionally, an *offset* for the image data may be provided.
-            
+
         The array must be one of the following types and will map to
         the corresponding Gamera image type:
 
@@ -85,6 +90,7 @@ else:
         args = Args([Class("array")])
         return_type = ImageType(ALL)
         pure_python = True
+
         def __call__(array, offset=None):
             from gamera.plugins import _string_io
             from gamera.core import Point, Dim
@@ -139,6 +145,7 @@ else:
         self_type = ImageType(ALL)
         return_type = Class("array")
         pure_python = True
+
         def __call__(image):
             from gamera.plugins import _string_io
             pixel_type = image.data.pixel_type
@@ -155,26 +162,31 @@ else:
             array = image.to_numarray()
             image0 = from_numarray(array)
             return [image, image0]
+
         def __doc_example2__(images):
             image = images[GREYSCALE]
             array = image.to_numarray()
             image0 = from_numarray(array)
             return [image, image0]
+
         def __doc_example4__(images):
             image = images[ONEBIT]
             array = image.to_numarray()
             image0 = from_numarray(array)
             return [image, image0]
+
         def __doc_example5__(images):
             image = images[FLOAT]
             array = image.to_numarray()
             image0 = from_numarray(array)
             return [image, image0]
+
         def __doc_example6__(images):
             image = images[COMPLEX]
             array = image.to_numarray()
             image0 = from_numarray(array)
             return [image, image0]
+
         doc_examples = [__doc_example1__,
                         __doc_example2__,
                         __doc_example4__,
@@ -182,7 +194,7 @@ else:
                         __doc_example6__]
 
     class NumarrayModule(PluginModule):
-        category = None #"ExternalLibraries/Numarray"
+        category = None  # "ExternalLibraries/Numarray"
         author = "Alex Cobb"
         functions = [from_numarray, to_numarray]
         pure_python = True
