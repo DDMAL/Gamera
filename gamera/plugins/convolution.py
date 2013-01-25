@@ -11,7 +11,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -19,9 +19,11 @@
 
 """The convolution module contains plugins for linear filtering"""
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import Choice, Int, ImageType, ImageList, Args, Float
+from gamera.enums import RGB, FLOAT, GREYSCALE, GREY16, COMPLEX
 from gamera.plugins import image_utilities
-from gamera import util
+
 import _arithmetic
 import _convolution
 
@@ -34,13 +36,14 @@ CONVOLUTION_TYPES = [GREYSCALE, GREY16, FLOAT, RGB, COMPLEX]
 ########################################
 # Convolution methods
 
+
 class convolve(PluginFunction):
     u"""
     Convolves an image with a given kernel.
 
     Uses code from the Vigra library (Copyright 1998-2007 by Ullrich
     K\u00f6the).
-    
+
     *kernel*
       A kernel for the convolution.  The kernel may either be a FloatImage
       or a nested Python list of floats.
@@ -64,7 +67,7 @@ class convolve(PluginFunction):
         repeat the nearest valid pixel
 
       - BORDER_TREATMENT_REFLECT (3)
-      
+
         reflect image at last row/column
 
       - BORDER_TREATMENT_WRAP (4)
@@ -98,6 +101,7 @@ class convolve(PluginFunction):
         return _convolution.convolve(self, kernel, border_treatment)
     __call__ = staticmethod(__call__)
 
+
 class convolve_xy(PluginFunction):
     u"""
     Convolves an image in both X and Y directions with 1D kernels.
@@ -106,7 +110,7 @@ class convolve_xy(PluginFunction):
 
     Uses code from the Vigra library (Copyright 1998-2007 by Ullrich
     K\u00f6the).
-    
+
     *kernel_y*
       A kernel for the convolution in the *y* direction.  The kernel
       may either be a FloatImage or a nested Python list of floats.
@@ -147,6 +151,7 @@ class convolve_xy(PluginFunction):
         return _convolution.convolve_y(result, kernel_y, border_treatment)
     __call__ = staticmethod(__call__)
 
+
 class convolve_x(PluginFunction):
     u"""
     Convolves an image in the X directions with a 1D kernel.  This is
@@ -180,6 +185,7 @@ class convolve_x(PluginFunction):
         return _convolution.convolve_x(self, kernel, border_treatment)
     __call__ = staticmethod(__call__)
 
+
 class convolve_y(PluginFunction):
     u"""
     Convolves an image in the X directions with a 1D kernel.  This is
@@ -212,13 +218,14 @@ class convolve_y(PluginFunction):
         return _convolution.convolve_y(self, kernel, border_treatment)
     __call__ = staticmethod(__call__)
 
+
 ########################################
 # Convolution kernels
-
 class ConvolutionKernel(PluginFunction):
     self_type = None
     return_type = ImageType([FLOAT])
     category = "Filter/ConvolutionKernels"
+
 
 class GaussianKernel(ConvolutionKernel):
     """
@@ -229,7 +236,8 @@ class GaussianKernel(ConvolutionKernel):
       The standard deviation of the Gaussian kernel.
     """
     args = Args([Float("standard_deviation", default=1.0)])
-    
+
+
 class GaussianDerivativeKernel(ConvolutionKernel):
     """
     Init as a Gaussian derivative of order 'order'.  The radius of the
@@ -244,6 +252,7 @@ class GaussianDerivativeKernel(ConvolutionKernel):
     args = Args([Float("standard_deviation", default=1.0),
                  Int("order", default=1)])
 
+
 class BinomialKernel(ConvolutionKernel):
     """
     Creates a binomial filter kernel for use with separable
@@ -253,6 +262,7 @@ class BinomialKernel(ConvolutionKernel):
       The radius of the kernel.
     """
     args = Args([Int("radius", default=3)])
+
 
 class AveragingKernel(ConvolutionKernel):
     """
@@ -264,11 +274,13 @@ class AveragingKernel(ConvolutionKernel):
     """
     args = Args([Int("radius", default=3)])
 
+
 class SymmetricGradientKernel(ConvolutionKernel):
     """
     Init as a symmetric gradient filter of the form [ 0.5, 0.0, -0.5]
     """
     args = Args([])
+
 
 class SimpleSharpeningKernel(ConvolutionKernel):
     """
@@ -276,6 +288,7 @@ class SimpleSharpeningKernel(ConvolutionKernel):
 
     """
     args = Args([Float('sharpening_factor', default=0.5)])
+
 
 ########################################
 # Convolution applications
@@ -286,7 +299,6 @@ class SimpleSharpeningKernel(ConvolutionKernel):
 # binary size of an already large module emmensely.  This approach has
 # slightly more overhead, being in Python, but it should hopefully
 # not have a significant impact. MGD
-
 class gaussian_smoothing(PluginFunction):
     """
     Performs gaussian smoothing on an image.
@@ -299,11 +311,13 @@ class gaussian_smoothing(PluginFunction):
     return_type = ImageType(CONVOLUTION_TYPES)
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0), (RGB, 3.0), (COMPLEX, 1.0)]
+
     def __call__(self, std_dev=1.0):
         return self.convolve_xy(
             _convolution.GaussianKernel(std_dev),
-            border_treatment = BORDER_TREATMENT_REFLECT)
+            border_treatment=BORDER_TREATMENT_REFLECT)
     __call__ = staticmethod(__call__)
+
 
 class simple_sharpen(PluginFunction):
     """
@@ -317,11 +331,13 @@ class simple_sharpen(PluginFunction):
     return_type = ImageType(CONVOLUTION_TYPES)
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0), (RGB, 3.0)]
+
     def __call__(self, sharpening_factor=0.5):
         return self.convolve(
             _convolution.SimpleSharpeningKernel(sharpening_factor),
-            border_treatment = BORDER_TREATMENT_REFLECT)
+            border_treatment=BORDER_TREATMENT_REFLECT)
     __call__ = staticmethod(__call__)
+
 
 class gaussian_gradient(PluginFunction):
     """
@@ -337,6 +353,7 @@ class gaussian_gradient(PluginFunction):
     return_type = ImageList("gradients")
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0), (RGB, 1.0), (COMPLEX, 1.0)]
+
     def __call__(self, scale=1.0):
         smooth = _convolution.GaussianKernel(scale)
         grad = _convolution.GaussianDerivativeKernel(scale, 1)
@@ -346,6 +363,7 @@ class gaussian_gradient(PluginFunction):
         result_y = tmp.convolve_y(grad)
         return result_x, result_y
     __call__ = staticmethod(__call__)
+
 
 class laplacian_of_gaussian(PluginFunction):
     """
@@ -359,6 +377,7 @@ class laplacian_of_gaussian(PluginFunction):
     return_type = ImageType([GREYSCALE, GREY16, FLOAT])
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0)]
+
     def __call__(self, scale=1.0):
         smooth = _convolution.GaussianKernel(scale)
         deriv = _convolution.GaussianDerivativeKernel(scale, 2)
@@ -375,6 +394,7 @@ class laplacian_of_gaussian(PluginFunction):
         return result
     __call__ = staticmethod(__call__)
 
+
 class hessian_matrix_of_gaussian(PluginFunction):
     """
     Filter image with the 2nd derivatives of the Gaussian at the given
@@ -387,6 +407,7 @@ class hessian_matrix_of_gaussian(PluginFunction):
     return_type = ImageList("hessian_matrix")
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0)]
+
     def __call__(self, scale=1.0):
         smooth = _convolution.GaussianKernel(scale)
         deriv1 = _convolution.GaussianDerivativeKernel(scale, 1)
@@ -402,8 +423,11 @@ class hessian_matrix_of_gaussian(PluginFunction):
             return tmp_x.to_greyscale(), tmp_y.to_greyscale(), tmp_xy.to_greyscale()
         if self.data.pixel_type == GREY16:
             return tmp_x.to_grey16(), tmp_y.to_grey16(), tmp_xy.to_grey16()
-        return result
+        # return result  <-- This would result in a crash since result is not defined -- AH, 2013
+        # it seems as though it would happen if this method is passed a FLOAT.
+        return None
     __call__ = staticmethod(__call__)
+
 
 class sobel_edge_detection(PluginFunction):
     """
@@ -413,14 +437,16 @@ class sobel_edge_detection(PluginFunction):
     return_type = ImageType(CONVOLUTION_TYPES)
     pure_python = True
     doc_examples = [(GREYSCALE, 1.0), (RGB, 3.0)]
+
     def __call__(self, scale=1.0):
         return self.convolve([[.125, 0.0, -.125],
                               [.25, 0.0, -.25],
                               [.125, 0.0, -.125]])
     __call__ = staticmethod(__call__)
 
+
 class ConvolutionModule(PluginModule):
-    cpp_headers=["convolution.hpp"]
+    cpp_headers = ["convolution.hpp"]
     category = "Filter"
     functions = [convolve, convolve_xy, convolve_x, convolve_y,
                  GaussianKernel, GaussianDerivativeKernel,
