@@ -11,14 +11,18 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Class, Args, Int, Check, Bool
+from gamera.enums import ONEBIT, GREYSCALE, RGB, GREY16, FLOAT, COMPLEX
+
 import _gui_support
+
 
 class to_string(PluginFunction):
     """
@@ -28,6 +32,7 @@ class to_string(PluginFunction):
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, RGB, FLOAT, COMPLEX])
     return_type = Class("image_as_string")
 
+
 class to_buffer(PluginFunction):
     """
     Encodes the image into a 'buffer' required by wx.Image.
@@ -35,7 +40,7 @@ class to_buffer(PluginFunction):
     *scaled_image* to a wx.Bitmap, you can do so as follows:
 
     .. code:: Python
-        
+
       wximg = wx.EmptyImage(scaled_image.ncols, scaled_image.nrows)
       scaled_image.to_buffer(wximg.GetDataBuffer())
       wxbmp = wx.BitmapFromImage(wximg)
@@ -44,6 +49,7 @@ class to_buffer(PluginFunction):
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, RGB, FLOAT, COMPLEX])
     args = Args(Class("Buffer"))
 
+
 class draw_cc(PluginFunction):
     """
     Draws a colored Cc over an already initialized wxImage buffer.
@@ -51,6 +57,7 @@ class draw_cc(PluginFunction):
     self_type = ImageType([RGB])
     args = Args([ImageType([ONEBIT]),
                  Int("red"), Int("green"), Int("blue")])
+
 
 class to_buffer_colorize(PluginFunction):
     """
@@ -61,6 +68,7 @@ class to_buffer_colorize(PluginFunction):
     args = Args([Class("Buffer"),
                  Int("red"), Int("green"), Int("blue"),
                  Bool("invert")])
+
 
 class color_ccs(PluginFunction):
     """
@@ -82,7 +90,7 @@ class color_ccs(PluginFunction):
     .. note:: Connected component analysis must already be performed
               on the image (using cc_analysis_, for example) in order
               for this to work.
-          
+
     .. _cc_analysis: segmentation.html#cc-analysis
 
     **Example 1:**
@@ -94,9 +102,11 @@ class color_ccs(PluginFunction):
     category = "Color"
     self_type = ImageType([ONEBIT])
     return_type = ImageType([RGB])
+
     def __call__(image, ignore_unlabeled=False):
         return _gui_support.color_ccs(image, ignore_unlabeled)
     __call__ = staticmethod(__call__)
+
 
 # By default, the wxPython-devel RPM puts stuff here, but this
 # should be done better
@@ -111,5 +121,5 @@ class GuiSupportModule(PluginModule):
                  draw_cc]
     author = "Michael Droettboom and Karl MacMillan"
     url = "http://gamera.sourceforge.net/"
-    
+
 module = GuiSupportModule()
