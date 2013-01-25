@@ -10,16 +10,19 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Transfer of Gamera image data in Python strings. 
+"""Transfer of Gamera image data in Python strings.
 """
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Class, Args, Dim, Point, Int
+from gamera.enums import ALL
+
 
 class _to_raw_string(PluginFunction):
     """
@@ -34,12 +37,13 @@ class _to_raw_string(PluginFunction):
     self_type = ImageType(ALL)
     return_type = Class("string_from_image")
 
+
 class _from_raw_string(PluginFunction):
     """
     Instantiates an image from binary data in a Python string.
 
     Requires a copying operation;  may fail for very large images.
-    
+
     This function is not intended to be used directly.  To move data
     to/from Numeric/numarray/PIL, use the functions in numeric_io.py,
     numarray_io.py and pil_io.py respectively.
@@ -54,9 +58,10 @@ class _from_raw_string(PluginFunction):
                  Class("data_string")])
     return_type = ImageType(ALL)
 
+
 class StringIOModule(PluginModule):
     category = "ExternalLibraries"
-    cpp_headers=["string_io.hpp"]
+    cpp_headers = ["string_io.hpp"]
     functions = [_to_raw_string,
                  _from_raw_string]
     author = "Alex Cobb"
