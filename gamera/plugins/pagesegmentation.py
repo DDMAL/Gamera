@@ -12,14 +12,18 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Int, Choice, ImageList, Class, IntVector
+from gamera.enums import ONEBIT
+
 import _pagesegmentation
+
 
 class projection_cutting(PluginFunction):
     """
@@ -63,13 +67,15 @@ class projection_cutting(PluginFunction):
       to a segment, in other words, they are ignored.
     """
     self_type = ImageType([ONEBIT])
-    args = Args([Int('Tx', default = 0), Int('Ty', default = 0), \
-		 Int('noise', default = 0), Choice('gap_treatment', ["cut", "ignore"], default=0)])
+    args = Args([Int('Tx', default=0), Int('Ty', default=0), \
+                 Int('noise', default=0), Choice('gap_treatment', ["cut", "ignore"], default=0)])
     return_type = ImageList("ccs")
     author = "Maria Elhachimi and Robert Butz"
-    def __call__(image, Tx = 0, Ty = 0, noise = 0, gap_treatment = 0):
-	    return _pagesegmentation.projection_cutting(image, Tx, Ty, noise, gap_treatment)
+
+    def __call__(image, Tx=0, Ty=0, noise=0, gap_treatment=0):
+        return _pagesegmentation.projection_cutting(image, Tx, Ty, noise, gap_treatment)
     __call__ = staticmethod(__call__)
+
 
 class runlength_smearing(PluginFunction):
     """
@@ -107,11 +113,12 @@ class runlength_smearing(PluginFunction):
     """
     self_type = ImageType([ONEBIT])
     return_type = ImageList("ccs")
-    args = Args([Int('Cx', default = -1), Int('Cy', default = -1), \
-		 Int('Csm', default = -1)])
+    args = Args([Int('Cx', default=-1), Int('Cy', default=-1), \
+                 Int('Csm', default=-1)])
     author = "Christoph Dalitz and Iliya Stoyanov"
-    def __call__(image, Cx = -1, Cy = -1, Csm = -1):
-	return _pagesegmentation.runlength_smearing(image, Cx, Cy, Csm)
+
+    def __call__(image, Cx=-1, Cy=-1, Csm=-1):
+        return _pagesegmentation.runlength_smearing(image, Cx, Cy, Csm)
     __call__ = staticmethod(__call__)
 
 
@@ -144,11 +151,13 @@ class bbox_merging(PluginFunction):
     """
     self_type = ImageType([ONEBIT])
     return_type = ImageList("ccs")
-    args = Args([Int('Ex', default = -1), Int('Ey', default = -1)])
+    args = Args([Int('Ex', default=-1), Int('Ey', default=-1)])
     pure_python = True
     author = "Rene Baston, Karl MacMillan, and Christoph Dalitz"
 
     def __call__(self, Ex=-1, Ey=-1):
+        from gamera.core import Dim, Rect, Point, Cc
+
         # two helper functions for merging rectangles
         def find_intersecting_rects(glyphs, index):
             g = glyphs[index]
@@ -159,6 +168,7 @@ class bbox_merging(PluginFunction):
                 if g.intersects(glyphs[i]):
                     inter.append(i)
             return inter
+
         def list_union_rects(big_rects):
             current = 0
             rects = big_rects
@@ -183,9 +193,6 @@ class bbox_merging(PluginFunction):
             return rects
 
         # the actual plugin
-        from gamera.core import Dim, Rect, Point, Cc
-        from gamera.plugins.image_utilities import union_images
-
         page = self.image_copy()
         ccs = page.cc_analysis()
 
@@ -197,9 +204,9 @@ class bbox_merging(PluginFunction):
         avg_size /= (2 * len(ccs))
         avg_size = int(avg_size)
         if Ex == -1:
-            Ex = avg_size*2
+            Ex = avg_size * 2
         if Ey == -1:
-            Ey = avg_size*2
+            Ey = avg_size * 2
 
         # extend CC bounding boxes
         big_rects = []
@@ -285,7 +292,7 @@ class textline_reading_order(PluginFunction):
     """
     Sorts a list of Images (CCs) representing textlines by reading order and
     returns the sorted list. Incidentally, this will not only work on
-    textlines, but also on paragraphs, but *not* on actual Connected 
+    textlines, but also on paragraphs, but *not* on actual Connected
     Components.
 
     The algorithm sorts all lines in topological order, based on
@@ -324,12 +331,13 @@ class textline_reading_order(PluginFunction):
     args = Args([ImageList("lineccs")])
     pure_python = True
     author = "Christoph Dalitz"
+
     def __call__(lineccs):
         # utilities for Gamera's graph API
         from gamera import graph
-        from gamera import graph_util
+
         class SegForGraph:
-            def __init__(self,seg):
+            def __init__(self, seg):
                 self.segment = seg
                 self.label = 0
         #
@@ -338,20 +346,21 @@ class textline_reading_order(PluginFunction):
         G = graph.Graph(graph.FLAG_DAG)
         seg_data = [SegForGraph(s) for s in lineccs]
         # sort by y-position for row over column preference in ambiguities
-        seg_data.sort(lambda s,t: s.segment.offset_y - t.segment.offset_y)
+        seg_data.sort(lambda s, t: s.segment.offset_y - t.segment.offset_y)
         G.add_nodes(seg_data)
         for s in seg_data:
             for t in seg_data:
                 if s.segment.offset_x <= t.segment.offset_x + t.segment.ncols and \
                         s.segment.offset_x + s.segment.ncols >= t.segment.offset_x:
                     if s.segment.offset_y < t.segment.offset_y:
-                        G.add_edge(s,t)
+                        G.add_edge(s, t)
                 elif s.segment.offset_x < t.segment.offset_x:
-                        G.add_edge(s,t)
+                    G.add_edge(s, t)
         #
         # compute topoligical sorting by depth-first-search
         #
-        segs_sorted = [] # topologically sorted list
+        segs_sorted = []  # topologically sorted list
+
         def dfs_visit(node):
             node.data.label = 1
             for nextnode in node.nodes:
@@ -361,7 +370,7 @@ class textline_reading_order(PluginFunction):
         for node in G.get_nodes():
             if node.data.label == 0:
                 dfs_visit(node)
-        segs_sorted.reverse() # correct that we always appended to the back
+        segs_sorted.reverse()  # correct that we always appended to the back
         return segs_sorted
 
     __call__ = staticmethod(__call__)
@@ -426,6 +435,7 @@ it explicitly with
     return_type = IntVector("errors", length=6)
     author = "Christoph Dalitz"
 
+
 # module declaration
 class PageSegmentationModule(PluginModule):
     cpp_headers = ["pagesegmentation.hpp"]
@@ -434,7 +444,7 @@ class PageSegmentationModule(PluginModule):
     functions = [projection_cutting, runlength_smearing, bbox_merging, \
                      sub_cc_analysis, textline_reading_order, \
                      segmentation_error]
-module = PageSegmentationModule() # create an instance of the module
+module = PageSegmentationModule()
 
 # free function instances
 textline_reading_order = textline_reading_order()
