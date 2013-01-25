@@ -11,17 +11,20 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, IntVector, Class, ChoiceString, Int, String
+from gamera.enums import ONEBIT
+
 import _runlength
 
-# New version of functions.  Deprecated versions are below.
 
+# New version of functions.  Deprecated versions are below.
 class most_frequent_run(PluginFunction):
     """
     Returns the length of the most frequently occurring run of pixels
@@ -32,6 +35,7 @@ class most_frequent_run(PluginFunction):
                  ChoiceString("direction", ["horizontal", "vertical"])])
     return_type = Int()
     doc_examples = [(ONEBIT, 'black', 'horizontal')]
+
 
 class most_frequent_runs(PluginFunction):
     """
@@ -52,10 +56,12 @@ class most_frequent_runs(PluginFunction):
                  ChoiceString("direction", ["horizontal", "vertical"])])
     return_type = Class()
     author = "Michael Droettboom, after an idea by Christoph Dalitz"
-    def __call__(image, n = -1, color = 'black', direction = 'horizontal'):
+
+    def __call__(image, n=-1, color='black', direction='horizontal'):
         return _runlength.most_frequent_runs(image, n, color, direction)
     __call__ = staticmethod(__call__)
     doc_examples = [(ONEBIT, 5, 'black', 'horizontal')]
+
 
 class run_histogram(PluginFunction):
     """
@@ -74,46 +80,52 @@ class run_histogram(PluginFunction):
     return_type = IntVector()
     doc_examples = [(ONEBIT, 'black', 'horizontal')]
 
+
 class FilterRuns(PluginFunction):
     self_type = ImageType([ONEBIT])
     args = Args([Int("length"), ChoiceString("color", ["black", "white"])])
     doc_examples = [(ONEBIT, 3, 'black')]
+
 
 class filter_narrow_runs(FilterRuns):
     """
     Removes horizontal runs in the given *color* narrower than a given
     *length*.
     """
-    def __call__(image, length, color = 'black'):
+    def __call__(image, length, color='black'):
         return _runlength.filter_narrow_runs(image, length, color)
     __call__ = staticmethod(__call__)
+
 
 class filter_wide_runs(FilterRuns):
     """
     Removes horizontal runs in the given *color* wider than a given
     *length*.
     """
-    def __call__(image, length, color = 'black'):
+    def __call__(image, length, color='black'):
         return _runlength.filter_wide_runs(image, length, color)
     __call__ = staticmethod(__call__)
+
 
 class filter_tall_runs(FilterRuns):
     """
     Removes vertical runs in the given *color* taller than a given
     *length*.
     """
-    def __call__(image, length, color = 'black'):
+    def __call__(image, length, color='black'):
         return _runlength.filter_tall_runs(image, length, color)
     __call__ = staticmethod(__call__)
+
 
 class filter_short_runs(FilterRuns):
     """
     Removes vertical runs in the given *color* shorter than a given
     *length*.
     """
-    def __call__(image, length, color = 'black'):
+    def __call__(image, length, color='black'):
         return _runlength.filter_short_runs(image, length, color)
     __call__ = staticmethod(__call__)
+
 
 class to_rle(PluginFunction):
     """
@@ -129,6 +141,7 @@ class to_rle(PluginFunction):
     return_type = String("runs")
     doc_examples = [(ONEBIT,)]
 
+
 class from_rle(PluginFunction):
     """
     Decodes a string-based run-length encoded version of the image.
@@ -141,13 +154,14 @@ class from_rle(PluginFunction):
     self_type = ImageType([ONEBIT])
     args = Args(String("runs"))
 
+
 class iterate_runs(PluginFunction):
     """
     Returns nested iterators over the runs in the given *color* and
     *direction*.
 
     Each run is returned as a Rect object.
-    
+
     For example, to iterate over all runs:
 
     .. code:: Python
@@ -162,14 +176,15 @@ class iterate_runs(PluginFunction):
                  ChoiceString("direction", ["horizontal", "vertical"])])
     return_type = Class()
 
-###########################################################################    
-# Deprecated functions.
 
+###########################################################################
+# Deprecated functions.
 class FrequentRun(PluginFunction):
     self_type = ImageType([ONEBIT])
     return_type = Int()
     category = "Runlength/Deprecated"
     pure_python = True
+
 
 class FrequentRuns(PluginFunction):
     self_type = ImageType([ONEBIT])
@@ -179,6 +194,7 @@ class FrequentRuns(PluginFunction):
     category = "Runlength/Deprecated"
     pure_python = True
 
+
 class RunHistogram(PluginFunction):
     self_type = ImageType([ONEBIT])
     return_type = IntVector()
@@ -186,11 +202,13 @@ class RunHistogram(PluginFunction):
     category = "Runlength/Deprecated"
     pure_python = True
 
+
 class FilterRunsDep(PluginFunction):
     self_type = ImageType([ONEBIT])
     args = Args(Int("size"))
     category = "Runlength/Deprecated"
     pure_python = True
+
 
 class RunIterator(PluginFunction):
     self_type = ImageType([ONEBIT])
@@ -198,9 +216,10 @@ class RunIterator(PluginFunction):
     category = "Runlength/Deprecated"
     pure_python = True
 
+
 class RunLengthModule(PluginModule):
     category = "Runlength"
-    cpp_headers=["runlength.hpp"]
+    cpp_headers = ["runlength.hpp"]
     functions = [most_frequent_run,
                  most_frequent_runs,
                  run_histogram,
@@ -215,7 +234,7 @@ class RunLengthModule(PluginModule):
     url = "http://gamera.sourceforge.net/"
 
 module = RunLengthModule()
-                 
+
 del FrequentRun
 del FrequentRuns
 del RunHistogram
