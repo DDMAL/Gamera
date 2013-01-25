@@ -11,46 +11,51 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import Args, Class, Int, Check
+
 import _listutilities
 
+
 class permute_list(PluginFunction):
-   """
-   Permutes the given list (in place) one step.
+    """
+    Permutes the given list (in place) one step.
 
-   Returns ``True`` if there are more permutations to go.  Returns
-   ``False`` if permutations are done.
+    Returns ``True`` if there are more permutations to go.  Returns
+    ``False`` if permutations are done.
 
-   Example usage::
+    Example usage::
 
-     >>>from gamera.plugins import listutilities
-     >>>a = [1,2,3]
-     >>>while listutilities.permute_list(a):
-     ...    print a
-     ...
-     [2, 1, 3]
-     [1, 3, 2]
-     [3, 1, 2]
-     [2, 3, 1]
-     [3, 2, 1]
-   """
-   category = "List"
-   self_type = None
-   args = Args([Class("list")])
-   return_type = Int("continuaton")
+      >>>from gamera.plugins import listutilities
+      >>>a = [1,2,3]
+      >>>while listutilities.permute_list(a):
+      ...    print a
+      ...
+      [2, 1, 3]
+      [1, 3, 2]
+      [3, 1, 2]
+      [2, 3, 1]
+      [3, 2, 1]
+    """
+    category = "List"
+    self_type = None
+    args = Args([Class("list")])
+    return_type = Int("continuaton")
+
 
 class all_subsets(PluginFunction):
-   """Returns all subsets of size *size* of the given list."""
-   category = "List"
-   self_type = None
-   args = Args([Class("list"), Int("size")])
-   return_type = Class("subsets")
+    """Returns all subsets of size *size* of the given list."""
+    category = "List"
+    self_type = None
+    args = Args([Class("list"), Int("size")])
+    return_type = Class("subsets")
+
 
 class median(PluginFunction):
     """Compute the median from a list of values in linear time.
@@ -98,9 +103,11 @@ entry, because arithmetic computations do not make sense in this case.
     args = Args([Class("list"),
                  Check("inlist", check_box="always from list", default=False)])
     author = "Christoph Dalitz"
+
     def __call__(list, inlist=False):
         return _listutilities.median_py(list, inlist)
     __call__ = staticmethod(__call__)
+
 
 class median_py(PluginFunction):
     """This is only for Gamera's Python-C++ interface."""
@@ -110,12 +117,13 @@ class median_py(PluginFunction):
     args = Args([Class("list"), Check("inlist")])
     author = "Christoph Dalitz"
 
+
 class ListUtilitiesModule(PluginModule):
-   category = None
-   cpp_headers=["listutilities.hpp"]
-   functions = [permute_list, all_subsets, median, median_py]
-   author = "Michael Droettboom and Karl MacMillan"
-   url = "http://gamera.sourceforge.net/"
+    category = None
+    cpp_headers = ["listutilities.hpp"]
+    functions = [permute_list, all_subsets, median, median_py]
+    author = "Michael Droettboom and Karl MacMillan"
+    url = "http://gamera.sourceforge.net/"
 module = ListUtilitiesModule()
 
 permute_list = permute_list()
