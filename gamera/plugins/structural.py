@@ -11,7 +11,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -20,7 +20,11 @@
 """The relational module contains plugins for computing the relationships
 between glyphs."""
 
-from gamera.plugin import * 
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Rect, Int, Check, String
+from gamera.args import Class, FloatVector, PointVector, Float
+from gamera.enums import ONEBIT, ALL
+
 
 class bounding_box_grouping_function(PluginFunction):
     """
@@ -32,6 +36,7 @@ class bounding_box_grouping_function(PluginFunction):
     args = Args([Rect("a"), Rect("b"), Int("threshold")])
     return_type = Check("connected")
 
+
 class shaped_grouping_function(PluginFunction):
     """
     Given two connected components *a*, *b*, and a given *threshold*
@@ -41,6 +46,7 @@ class shaped_grouping_function(PluginFunction):
     self_type = None
     args = Args([ImageType(ONEBIT, "a"), ImageType(ONEBIT, "b"), Int("threshold")])
     return_type = Check("connected")
+
 
 class polar_distance(PluginFunction):
     """
@@ -52,10 +58,12 @@ class polar_distance(PluginFunction):
     return_type = FloatVector("polar")
     args = Args([ImageType(ALL, "other")])
 
+
 class polar_match(PluginFunction):
     self_type = None
     return_type = Int("check")
     args = Args([Float('r1'), Float('q1'), Float('r2'), Float('q2')])
+
 
 class least_squares_fit(PluginFunction):
     """
@@ -65,7 +73,7 @@ class least_squares_fit(PluginFunction):
     slope of the line, *b* is the *y*-offset, and *q* is the gamma fit
     of the line to the points. (This assumes the same statistical
     significance for all points).
-    
+
     See Numerical Recipes in C, section 15.2__ for more information.
 
     .. __: http://www.library.cornell.edu/nr/bookcpdf/c15-2.pdf
@@ -73,6 +81,7 @@ class least_squares_fit(PluginFunction):
     self_type = None
     return_type = Class("a_b_q")
     args = Args([PointVector("points")])
+
 
 class least_squares_fit_xy(PluginFunction):
     """
@@ -92,14 +101,15 @@ class least_squares_fit_xy(PluginFunction):
     args = Args([PointVector("points")])
     author = "Christoph Dalitz"
 
+
 class edit_distance(PluginFunction):
     """
     Computes the edit distance (also known as *Levenshtein distance*) between
     two strings.
 
     This counts the number of character substitutions, additions and deletions
-    necessary to transform one string into another. This plugin is a 
-    straightforward implementation of the classic algorithm by Wagner 
+    necessary to transform one string into another. This plugin is a
+    straightforward implementation of the classic algorithm by Wagner
     and Fischer, which has runtime complexity *O(m*n)*, where *m* and *n* are
     the lengths of the two strings.
 
@@ -110,6 +120,7 @@ class edit_distance(PluginFunction):
     args = Args([String("s1"), String("s2")])
     return_type = Int("distance")
     author = "Christoph Dalitz"
+
 
 class RelationalModule(PluginModule):
     cpp_headers = ["structural.hpp"]
