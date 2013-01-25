@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -18,9 +18,10 @@
 
 """Various functions related to corelation (template matching)."""
 
-from gamera.plugin import *
-from gamera import util
-import _corelation
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Float, Point
+from gamera.enums import GREYSCALE, ONEBIT
+
 
 class corelation_weighted(PluginFunction):
     """
@@ -58,6 +59,7 @@ class corelation_weighted(PluginFunction):
                  Point("offset"),
                  Float("bb"), Float("bw"), Float("wb"), Float("ww")])
 
+
 class corelation_sum(PluginFunction):
     """
     Returns a floating-point value for how well an image is corelated
@@ -76,6 +78,7 @@ class corelation_sum(PluginFunction):
     args = Args([ImageType([ONEBIT], "template"), Point("offset")])
     progress_bar = "Correlating"
 
+
 class corelation_sum_squares(PluginFunction):
     """
     Returns a floating-point value for how well an image is corelated
@@ -92,8 +95,9 @@ class corelation_sum_squares(PluginFunction):
     args = Args([ImageType([ONEBIT], "template"), Point("offset")])
     progress_bar = "Correlating"
 
+
 class CorelationModule(PluginModule):
-    cpp_headers=["corelation.hpp"]
+    cpp_headers = ["corelation.hpp"]
     category = "Corelation"
     functions = [corelation_weighted, corelation_sum,
                  corelation_sum_squares]
