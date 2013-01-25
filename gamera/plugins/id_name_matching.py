@@ -11,15 +11,19 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+import string
+import keyword
+from types import StringType
 
-from gamera.plugin import * 
-import re, string
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import Args, String
 
 
 def build_id_regex(s):
@@ -49,11 +53,11 @@ def build_id_regex(s):
             return '|' + r, s
         elif lparen != -1 and lparen < rparen:
             result = _build_id_regex_parts(s[:lparen])
-            r1, s1 = _build_id_regex_parens(s[lparen+1:])
+            r1, s1 = _build_id_regex_parens(s[lparen + 1:])
             r2, s2 = _build_id_regex_parens(s1)
             return result + r1 + r2, s2
         elif rparen != -1:
-            return _build_id_regex_parts(s[:rparen]), s[rparen+1:]
+            return _build_id_regex_parts(s[:rparen]), s[rparen + 1:]
         else:
             return _build_id_regex_parts(s), ''
     regex, s = _build_id_regex_parens(s)
@@ -62,6 +66,8 @@ def build_id_regex(s):
 regex_cache = {}
 dummy_regex = re.compile('')
 type_dummy_regex = type(dummy_regex)
+
+
 class match_id_name(PluginFunction):
     r"""
     Returns true if the image's main ``id_name`` matches the given regular
@@ -89,10 +95,10 @@ class match_id_name(PluginFunction):
     ``()``                grouping can be performed with parentheses
     ``[a-z]``             matches any character a-z
     ====================  =============================================
-    
+
     **Example expressions:**
-    
-    ========================  ====================================================  
+
+    ========================  ====================================================
     ``(upper.x)|(lower.y)``   match either ``upper.x`` or ``lower.y``
     ``upper.x|upper.y``       careful! matches ``upper.x.y`` or ``upper.upper.y``
     ``upper.*``               match anything in the ``upper`` category
@@ -101,6 +107,7 @@ class match_id_name(PluginFunction):
     ========================  ====================================================
     """
     args = Args([String('regex')])
+
     def __call__(self, regex):
         global regex_cache
         if type(regex) == StringType:
@@ -123,11 +130,14 @@ class match_id_name(PluginFunction):
     __call__ = staticmethod(__call__)
 
 _valid = string.letters + string.digits + "_"
+
+
 def id_name_to_identifier(symbol):
     while len(symbol) and symbol[0] == '.':
         symbol = symbol[1:]
     if symbol == '':
         return '____'
+
     def translate(c):
         if not c in _valid:
             return "_"
@@ -144,6 +154,7 @@ def id_name_to_identifier(symbol):
             tokens.append(token.strip())
     symbol = '_'.join(tokens)
     return symbol
+
 
 class IdNameMatchingModule(PluginModule):
     category = "Classification"
