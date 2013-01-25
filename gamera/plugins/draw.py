@@ -12,527 +12,529 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from random import randint
+import sys
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Float, FloatPoint, Point, Pixel, Int, Choice, String, Check
+from gamera.core import Image, Dim, RGBPixel
+from gamera.enums import GREYSCALE, ONEBIT, FLOAT, RGB, ALL, DENSE
 
-from gamera.plugin import *
-from gamera.util import warn_deprecated
 import _draw
-try:
-  from gamera.core import RGBPixel
-except:
-  def RGBPixel(*args):
-    pass
+
 
 class draw_marker(PluginFunction):
-  """
-  Draws a marker at a given point.
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a marker at (5, 5)
-  will be in the upper left hand corner of the image.
-
-  *a*
-    The position of the marker.
-
-  *size*
-    The size of the marker (number of pixels)
-
-  *style*
-    PLUS + (0)
-
-    X + (1)
-
-    HOLLOW_SQUARE (2)
-
-    FILLED_SQUARE (3)
-
-  *value*
-    The pixel value to set for the line.
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("location"), Int("size", default=5),
-               Choice("style", "+ x hollow_square filled_square".split(),
-                      default=0),
-               Pixel("value")])
-  author = "Michael Droettboom"
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    points = [(randint(0, 100), randint(0, 100)) for x in range(4)]
-    image.draw_bezier(*tuple(list(points) + [RGBPixel(255, 0, 0), 0.1]))
-    image.draw_marker(points[0], 7, 0, RGBPixel(0, 0, 255))
-    image.draw_marker(points[1], 7, 1, RGBPixel(0, 255, 0))
-    image.draw_marker(points[2], 7, 1, RGBPixel(0, 255, 0))
-    image.draw_marker(points[3], 7, 0, RGBPixel(0, 0, 255))
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_line(PluginFunction):
-  """
-  Draws a straight line between two points.
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a line at (5, 5) will be
-  in the upper left hand corner of the image.
-
-  *a*:
-    The start ``FloatPoint``.
-
-  *b*:
-    The end ``FloatPoint``.
-
-  *value*:
-    The pixel value to set for the line.
-
-  *thickness* = 1.0:
-    The thickness of the line (in pixels)
-
-  The implementation is based on the classic Bresenham algorithm, as described
-  in J. E. Bresenham: *Algorithm for computer control of a digital plotter.*
-  IBM Systems Journal 4, pp. 25-30 (1965).
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("start"), FloatPoint("end"), Pixel("value"), Float("thickness")])
-  author = "Michael Droettboom and Christoph Dalitz"
-
-  def __call__(self, start, end, value, thickness = 1.0):
-    return _draw.draw_line(self, start, end, value, thickness)
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    for i in range(10):
-      image.draw_line((randint(0, 100), randint(0, 100)),
-                      (randint(0, 100), randint(0, 100)),
-                      RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)),
-                      float(randint(0, 4)))
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_hollow_rect(PluginFunction):
-  """
-  Draws a hollow rectangle.
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a rectangle at (5, 5) will be
-  in the upper left hand corner of the image.
-
-  The coordinates can be specified either by two FloatPoints or one
-  Rect:
-
-    **draw_hollow_rect** (FloatPoint(*x1*, *y1*), FloatPoint(*x2*,
-    *y2*), *value*, *thickness* = 1.0)
-
-    **draw_hollow_rect** (Rect *rect*, *value*, *thickness* = 1.0)
-
-  *value*:
-    The pixel value to set for the lines.
-
-  *thickness* = 1.0:
-    The thickness of the outline
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("ul"), FloatPoint("lr"), Pixel("value"), Float("thickness")])
-
-  def __call__(self, *args):
-    from gamera.gameracore import Rect
-    if len(args) == 4:
-      return _draw.draw_hollow_rect(self, *args)
-    elif len(args) == 3:
-      a, b, c = args
-      if hasattr(a, 'ul') and hasattr(a, 'lr'):
-        return _draw.draw_hollow_rect(self, a.ul, a.lr, b, c)
-      else:
-        return _draw.draw_hollow_rect(self, a, b, c, 1.0)
-    elif len(args) == 2:
-      a, b = args
-      if hasattr(a, 'ul') and hasattr(a, 'lr'):
-        return _draw.draw_hollow_rect(self, a.ul, a.lr, b, 1.0)
-    raise ValueError("Arguments to draw_hollow_rect are incorrect.")
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    for i in range(10):
-      image.draw_hollow_rect((randint(0, 100), randint(0, 100)),
-                             (randint(0, 100), randint(0, 100)),
-                             RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)))
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_filled_rect(PluginFunction):
-  """
-  Draws a filled rectangle.
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a rectangle at (5, 5) will
-  be in the upper left hand corner of the image.
-
-  The coordinates can be specified either by four integers, two
-  FloatPoints, or one Rect:
-
-  **draw_filled_rect** (FloatPoint(*x1*, *y1*), FloatPoint(*x2*,
-  *y2*), *value*)
-
-  **draw_filled_rect** (Rect *rect*, *value*)
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("ul"), FloatPoint("lr"), Pixel("value")])
-
-  def __call__(self, *args):
-    if len(args) == 3:
-      return _draw.draw_filled_rect(self, *args)
-    elif len(args) == 2:
-      a, value = args
-      return _draw.draw_filled_rect(self, a.ul, a.lr, value)
-    raise ValueError("Arguments to draw_filled_rect are incorrect.")
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    for i in range(10):
-      image.draw_filled_rect((randint(0, 100), randint(0, 100)),
-                             (randint(0, 100), randint(0, 100)),
-                             RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)))
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_bezier(PluginFunction):
-  """
-  Draws a cubic bezier curve
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a curve at (5, 5) will be in
-  the upper left hand corner of the image.
-
-  *start*:
-    The start ``FloatPoint``.
-
-  *c1*:
-    The control point associated with the start point.
-
-  *c2*
-    The control point associated with the end point.
-
-  *end*
-    The end ``FloatPoint``.
-
-  *value*:
-    The pixel value to set for the curve.
-
-  *accuracy* = ``0.1``:
-    The rendering accuracy (in pixels)
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("start"), FloatPoint("c1"), FloatPoint("c2"), FloatPoint("end"),
-               Pixel("value"), Float("accuracy", default=0.1)])
-
-  def __call__(self, start, c1, c2, end, value, accuracy = 0.1):
-    return _draw.draw_bezier(self, start, c2, c2, end, value, accuracy)
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    for i in range(10):
-      image.draw_bezier((randint(0, 100), randint(0, 100)),
-                        (randint(0, 100), randint(0, 100)),
-                        (randint(0, 100), randint(0, 100)),
-                        (randint(0, 100), randint(0, 100)),
-                        RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)),
-                        0.1)
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_circle(PluginFunction):
-  """
-  Draws a center centered at *c* with radius *r*.
-
-  Coordinates are absolute and *not* relative to the offset of the image.
-  Therefore, if the image offset is (5, 5), a line at (5, 5) will be
-  in the upper left hand corner of the image.
-
-  *c*:
-    The center of the circle
-
-  *r*:
-    The radius of the circle
-
-  *value*:
-    The pixel value to set for the line.
-
-  *thickness* = 1.0:
-    The thickness of the circle (in pixels)
-
-  *accuracy* = 0.1:
-    The accuracy of the circle drawing
-
-    Based on the "approximating a circle with Bezier curves" approach.
-    http://www.whizkidtech.redprince.net/bezier/circle/
-  """
-  self_type = ImageType(ALL)
-  args = Args([FloatPoint("c"), Float("r"), Pixel("value"), Float("thickness"), Float("accuracy")])
-  author = "Michael Droettboom with the help of Christoph Dalitz"
-
-  def __call__(self, c, r, value, thickness = 1.0, accuracy = 0.1):
-    return _draw.draw_circle(self, c, r, value, thickness, accuracy)
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(100, 100), RGB, DENSE)
-    for i in range(10):
-      image.draw_circle((randint(0, 100), randint(0, 100)),
-                        randint(0, 100),
-                        RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)),
-                        1.0, 0.1)
-    return image
-  doc_examples = [__doc_example1__]
-
-class draw_text(PluginFunction):
-  """
-  Draws text onto the image.  The results are fairly primitive.  The
-  text is not anti-aliased, but should be adequate for marking up the
-  image for debugging purposes.
-
-  This function relies on wxPython for font rendering.  Therefore,
-  wxPython must be installed, and it must be runnable in the current
-  environment, for example, a connection to a display or X server must
-  be available.  This may not be the case when running over a remote
-  terminal, for example.
-
-  *p*
-    The position of the text.  The *x* component will be either at the
-    left, center, or right of the text, depending on the value of
-    *halign*.  The *y* component specifies the top of the text.
-
-  *text*
-    The string to be drawn on the image.  If this is an 8-bit string the string
-    should be encoded in the default encoding for your system.  If a Unicode
-    string, the text will be rendered using a Unicode font.  This requires
-    that your wxPython version is compiled with Unicode support.
-
-  *color*
-    The color of the text to be drawn.  Note that there are some peculiarities
-    for **ONEBIT** images:
-
-      If *color* is zero, the text will be white.  If non-zero, the
-      text will be black.  It is not possible to set different values
-      for the text.
-
-  *family*
-    The font family to be used.  For platform independence, this argument
-    takes a general typeface style which will be mapped to an appropriate
-    typeface on each platform.
-
-      SERIF (0)
-
-      SANS-SERIF (1)
-
-      MONOSPACE (2)
-
-  *size* = 10
-    The font size **in pixels** (i.e. not in "points")
-
-  *italic* = ``False``
-    If ``True``, the text will be italic.
-
-  *bold* = ``False``
-    If ``True``, the text will be bold.
-
-  *halign*
-    LEFT JUSTIFIED (0):  The text is left-justified to the point *p*.
-
-    CENTERED (1):  The text is centered horizontally to the point *p*.
-
-    RIGHT JUSTIFIED (2):  The text is right-justified to the point *p*.
-  """
-  self_type = ImageType([ONEBIT, RGB])
-  args = Args([FloatPoint("p"), String("text"), Pixel("color"),
-               Int("size", default=10, range=(3, 512)),
-               Choice("font_family", ['serif', 'sans-serif', 'monospace']),
-               Check("italic", default=False),
-               Check("bold", default=False),
-               Choice("halign", ["left", "center", "right"])
-               ])
-  author = "Michael Droettboom"
-  pure_python = True
-
-  def __call__(self, p, text, color, size=10, font_family=0,
-               italic=False, bold=False, halign=0):
-    from gamera.core import Dim, RGB, ONEBIT, Image
-    from gamera.plugins import string_io
-    try:
-      import wx
-    except ImportError:
-      raise RuntimeError("Drawing text requires wxPython.")
-    try:
-      dc = wx.MemoryDC()
-    except wx._core.PyNoAppError:
-      app = wx.App()
-      dc = wx.MemoryDC()
-    if font_family < 0 or font_family > 2:
-      raise ValueError("font_family must be in range 0-2.")
-    font_family = [wx.ROMAN, wx.SWISS, wx.MODERN][font_family]
-    italic = (italic and wx.ITALIC) or wx.NORMAL
-    bold = (bold and wx.BOLD) or wx.NORMAL
-    if type(text) == str:
-      encoding = wx.FONTENCODING_SYSTEM
-    elif type(text) == unicode:
-      encoding = wx.FONTENCODING_UNICODE
-    else:
-      raise ValueError("text must be a string or unicode string.")
-    font = wx.Font(size, font_family, italic, bold,
-                   encoding = encoding)
-    font.SetPixelSize(wx.Size(size * 2, size * 2))
-    dc.SetFont(font)
-    w, h = dc.GetTextExtent(text)
-
-    # Do the actual drawing
-    bmp = wx.EmptyBitmap(w, h, -1)
-    dc.SelectObject(bmp)
-    dc.SetPen(wx.TRANSPARENT_PEN)
-    dc.SetBrush(wx.WHITE_BRUSH)
-    dc.DrawRectangle(0, 0, w, h)
-    dc.SetBrush(wx.BLACK_BRUSH)
-    dc.DrawText(text, 0, 0)
-    img = bmp.ConvertToImage()
-    img_str = img.GetData()
-    
-    text_image = string_io._from_raw_string(
-      (0, 0), Dim(w, h), RGB, 0, img_str)
-    text_image = text_image.to_onebit()
-    if halign == 1:
-      p = (p[0] - w / 2, p[1])
-    elif halign == 2:
-      p = (p[0] - w, p[1])
-
-    ul = (max(p[0], self.ul_x), max(p[1], self.ul_y))
-    lr = (min(p[0] + w, self.lr_x), min(p[1] + h, self.lr_y))
-    w = lr[0] - ul[0]
-    h = lr[1] - ul[1]
-    if w < 0 or h < 0:
-      return
-    
-    text_image = text_image.subimage(
-      (max(self.ul_x - p[0], 0), max(self.ul_y - p[1], 0)),
-      Dim(w, h))
-    if self.data.pixel_type == ONEBIT:
-      subimage = self.subimage(ul, Dim(w, h))
-      if color:
-        subimage.or_image(text_image, in_place=True)
-      else:
-        text_image.invert()
-        subimage.and_image(text_image, in_place=True)
-    elif self.data.pixel_type == RGB:
-      subimage = Image((max(ul[0] - self.ul_x, p[0]),
-                        max(ul[1] - self.ul_y, p[1])),
-                       Dim(w, h), ONEBIT)
-      subimage.or_image(text_image, in_place=True)
-      self.highlight(subimage, color)
-  __call__ = staticmethod(__call__)
-
-  def __doc_example1__(images):
-    from random import randint
-    from gamera.core import Image, Dim
-    image = Image((0, 0), Dim(320, 300), RGB, DENSE)
-
-    # These are some various Unicode encoded names of different
-    # languages (from the wikipedia.org front page).  Just a quick way
-    # to test Unicode support.  I use the long encoding here so this
-    # source file iteself will be portable.
-    names = ['\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8',
-             '\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa',
-             '\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9',
-             '\xc4\x8cesk\xc3\xa1',
-             'Rom\xc3\xa2n\xc4\x83',
-             '\xe1\x83\xa5\xe1\x83\x90\xe1\x83\xa0\xe1\x83\x97\xe1\x83\xa3\xe1\x83\x9a\xe1\x83\x98',
-             '\xd0\x9c\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8',
-             '\xc3\x8dslenska',
-             'Lietuvi\xc5\xb3',
-             'T\xc3\xbcrk\xc3\xa7e']
-             
-    try:
-      for i, name in enumerate(names):
-        image.draw_text((160, i * 30),
-                        name, RGBPixel(randint(0, 255), randint(0,255), randint(0, 255)), 20, halign=1)
-    except:
-      pass
-    return image
-  if sys.platform != 'darwin':
+    """
+    Draws a marker at a given point.
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a marker at (5, 5)
+    will be in the upper left hand corner of the image.
+
+    *a*
+      The position of the marker.
+
+    *size*
+      The size of the marker (number of pixels)
+
+    *style*
+      PLUS + (0)
+
+      X + (1)
+
+      HOLLOW_SQUARE (2)
+
+      FILLED_SQUARE (3)
+
+    *value*
+      The pixel value to set for the line.
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("location"), Int("size", default=5),
+                 Choice("style", "+ x hollow_square filled_square".split(),
+                        default=0),
+                 Pixel("value")])
+    author = "Michael Droettboom"
+
+    def __doc_example1__(images):
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        points = [(randint(0, 100), randint(0, 100)) for x in range(4)]
+        image.draw_bezier(*tuple(list(points) + [RGBPixel(255, 0, 0), 0.1]))
+        image.draw_marker(points[0], 7, 0, RGBPixel(0, 0, 255))
+        image.draw_marker(points[1], 7, 1, RGBPixel(0, 255, 0))
+        image.draw_marker(points[2], 7, 1, RGBPixel(0, 255, 0))
+        image.draw_marker(points[3], 7, 0, RGBPixel(0, 0, 255))
+        return image
     doc_examples = [__doc_example1__]
 
+
+class draw_line(PluginFunction):
+    """
+    Draws a straight line between two points.
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a line at (5, 5) will be
+    in the upper left hand corner of the image.
+
+    *a*:
+      The start ``FloatPoint``.
+
+    *b*:
+      The end ``FloatPoint``.
+
+    *value*:
+      The pixel value to set for the line.
+
+    *thickness* = 1.0:
+      The thickness of the line (in pixels)
+
+    The implementation is based on the classic Bresenham algorithm, as described
+    in J. E. Bresenham: *Algorithm for computer control of a digital plotter.*
+    IBM Systems Journal 4, pp. 25-30 (1965).
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("start"), FloatPoint("end"), Pixel("value"), Float("thickness")])
+    author = "Michael Droettboom and Christoph Dalitz"
+
+    def __call__(self, start, end, value, thickness=1.0):
+        return _draw.draw_line(self, start, end, value, thickness)
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        for i in range(10):
+            image.draw_line((randint(0, 100), randint(0, 100)),
+                            (randint(0, 100), randint(0, 100)),
+                            RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)),
+                            float(randint(0, 4)))
+        return image
+    doc_examples = [__doc_example1__]
+
+
+class draw_hollow_rect(PluginFunction):
+    """
+    Draws a hollow rectangle.
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a rectangle at (5, 5) will be
+    in the upper left hand corner of the image.
+
+    The coordinates can be specified either by two FloatPoints or one
+    Rect:
+
+      **draw_hollow_rect** (FloatPoint(*x1*, *y1*), FloatPoint(*x2*,
+      *y2*), *value*, *thickness* = 1.0)
+
+      **draw_hollow_rect** (Rect *rect*, *value*, *thickness* = 1.0)
+
+    *value*:
+      The pixel value to set for the lines.
+
+    *thickness* = 1.0:
+      The thickness of the outline
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("ul"), FloatPoint("lr"), Pixel("value"), Float("thickness")])
+
+    def __call__(self, *args):
+        if len(args) == 4:
+            return _draw.draw_hollow_rect(self, *args)
+        elif len(args) == 3:
+            a, b, c = args
+            if hasattr(a, 'ul') and hasattr(a, 'lr'):
+                return _draw.draw_hollow_rect(self, a.ul, a.lr, b, c)
+            else:
+                return _draw.draw_hollow_rect(self, a, b, c, 1.0)
+        elif len(args) == 2:
+            a, b = args
+            if hasattr(a, 'ul') and hasattr(a, 'lr'):
+                return _draw.draw_hollow_rect(self, a.ul, a.lr, b, 1.0)
+        raise ValueError("Arguments to draw_hollow_rect are incorrect.")
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        for i in range(10):
+            image.draw_hollow_rect((randint(0, 100), randint(0, 100)),
+                                   (randint(0, 100), randint(0, 100)),
+                                   RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)))
+        return image
+    doc_examples = [__doc_example1__]
+
+
+class draw_filled_rect(PluginFunction):
+    """
+    Draws a filled rectangle.
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a rectangle at (5, 5) will
+    be in the upper left hand corner of the image.
+
+    The coordinates can be specified either by four integers, two
+    FloatPoints, or one Rect:
+
+    **draw_filled_rect** (FloatPoint(*x1*, *y1*), FloatPoint(*x2*,
+    *y2*), *value*)
+
+    **draw_filled_rect** (Rect *rect*, *value*)
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("ul"), FloatPoint("lr"), Pixel("value")])
+
+    def __call__(self, *args):
+        if len(args) == 3:
+            return _draw.draw_filled_rect(self, *args)
+        elif len(args) == 2:
+            a, value = args
+            return _draw.draw_filled_rect(self, a.ul, a.lr, value)
+        raise ValueError("Arguments to draw_filled_rect are incorrect.")
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        from random import randint
+        from gamera.core import Image, Dim
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        for i in range(10):
+            image.draw_filled_rect((randint(0, 100), randint(0, 100)),
+                                   (randint(0, 100), randint(0, 100)),
+                                   RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)))
+        return image
+    doc_examples = [__doc_example1__]
+
+
+class draw_bezier(PluginFunction):
+    """
+    Draws a cubic bezier curve
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a curve at (5, 5) will be in
+    the upper left hand corner of the image.
+
+    *start*:
+      The start ``FloatPoint``.
+
+    *c1*:
+      The control point associated with the start point.
+
+    *c2*
+      The control point associated with the end point.
+
+    *end*
+      The end ``FloatPoint``.
+
+    *value*:
+      The pixel value to set for the curve.
+
+    *accuracy* = ``0.1``:
+      The rendering accuracy (in pixels)
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("start"), FloatPoint("c1"), FloatPoint("c2"), FloatPoint("end"),
+                 Pixel("value"), Float("accuracy", default=0.1)])
+
+    def __call__(self, start, c1, c2, end, value, accuracy=0.1):
+        return _draw.draw_bezier(self, start, c2, c2, end, value, accuracy)
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        from random import randint
+        from gamera.core import Image, Dim
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        for i in range(10):
+            image.draw_bezier((randint(0, 100), randint(0, 100)),
+                              (randint(0, 100), randint(0, 100)),
+                              (randint(0, 100), randint(0, 100)),
+                              (randint(0, 100), randint(0, 100)),
+                              RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)),
+                              0.1)
+        return image
+    doc_examples = [__doc_example1__]
+
+
+class draw_circle(PluginFunction):
+    """
+    Draws a center centered at *c* with radius *r*.
+
+    Coordinates are absolute and *not* relative to the offset of the image.
+    Therefore, if the image offset is (5, 5), a line at (5, 5) will be
+    in the upper left hand corner of the image.
+
+    *c*:
+      The center of the circle
+
+    *r*:
+      The radius of the circle
+
+    *value*:
+      The pixel value to set for the line.
+
+    *thickness* = 1.0:
+      The thickness of the circle (in pixels)
+
+    *accuracy* = 0.1:
+      The accuracy of the circle drawing
+
+      Based on the "approximating a circle with Bezier curves" approach.
+      http://www.whizkidtech.redprince.net/bezier/circle/
+    """
+    self_type = ImageType(ALL)
+    args = Args([FloatPoint("c"), Float("r"), Pixel("value"), Float("thickness"), Float("accuracy")])
+    author = "Michael Droettboom with the help of Christoph Dalitz"
+
+    def __call__(self, c, r, value, thickness=1.0, accuracy=0.1):
+        return _draw.draw_circle(self, c, r, value, thickness, accuracy)
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        from random import randint
+        from gamera.core import Image, Dim
+        image = Image((0, 0), Dim(100, 100), RGB, DENSE)
+        for i in range(10):
+            image.draw_circle((randint(0, 100), randint(0, 100)),
+                              randint(0, 100),
+                              RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)),
+                              1.0, 0.1)
+        return image
+    doc_examples = [__doc_example1__]
+
+
+class draw_text(PluginFunction):
+    """
+    Draws text onto the image.  The results are fairly primitive.  The
+    text is not anti-aliased, but should be adequate for marking up the
+    image for debugging purposes.
+
+    This function relies on wxPython for font rendering.  Therefore,
+    wxPython must be installed, and it must be runnable in the current
+    environment, for example, a connection to a display or X server must
+    be available.  This may not be the case when running over a remote
+    terminal, for example.
+
+    *p*
+      The position of the text.  The *x* component will be either at the
+      left, center, or right of the text, depending on the value of
+      *halign*.  The *y* component specifies the top of the text.
+
+    *text*
+      The string to be drawn on the image.  If this is an 8-bit string the string
+      should be encoded in the default encoding for your system.  If a Unicode
+      string, the text will be rendered using a Unicode font.  This requires
+      that your wxPython version is compiled with Unicode support.
+
+    *color*
+      The color of the text to be drawn.  Note that there are some peculiarities
+      for **ONEBIT** images:
+
+        If *color* is zero, the text will be white.  If non-zero, the
+        text will be black.  It is not possible to set different values
+        for the text.
+
+    *family*
+      The font family to be used.  For platform independence, this argument
+      takes a general typeface style which will be mapped to an appropriate
+      typeface on each platform.
+
+        SERIF (0)
+
+        SANS-SERIF (1)
+
+        MONOSPACE (2)
+
+    *size* = 10
+      The font size **in pixels** (i.e. not in "points")
+
+    *italic* = ``False``
+      If ``True``, the text will be italic.
+
+    *bold* = ``False``
+      If ``True``, the text will be bold.
+
+    *halign*
+      LEFT JUSTIFIED (0):  The text is left-justified to the point *p*.
+
+      CENTERED (1):  The text is centered horizontally to the point *p*.
+
+      RIGHT JUSTIFIED (2):  The text is right-justified to the point *p*.
+    """
+    self_type = ImageType([ONEBIT, RGB])
+    args = Args([FloatPoint("p"), String("text"), Pixel("color"),
+                 Int("size", default=10, range=(3, 512)),
+                 Choice("font_family", ['serif', 'sans-serif', 'monospace']),
+                 Check("italic", default=False),
+                 Check("bold", default=False),
+                 Choice("halign", ["left", "center", "right"])
+                 ])
+    author = "Michael Droettboom"
+    pure_python = True
+
+    def __call__(self, p, text, color, size=10, font_family=0,
+                 italic=False, bold=False, halign=0):
+        from gamera.core import Dim, RGB, ONEBIT, Image
+        from gamera.plugins import string_io
+        try:
+            import wx
+        except ImportError:
+            raise RuntimeError("Drawing text requires wxPython.")
+        try:
+            dc = wx.MemoryDC()
+        except wx._core.PyNoAppError:
+            dc = wx.MemoryDC()
+        if font_family < 0 or font_family > 2:
+            raise ValueError("font_family must be in range 0-2.")
+        font_family = [wx.ROMAN, wx.SWISS, wx.MODERN][font_family]
+        italic = (italic and wx.ITALIC) or wx.NORMAL
+        bold = (bold and wx.BOLD) or wx.NORMAL
+        if type(text) == str:
+            encoding = wx.FONTENCODING_SYSTEM
+        elif type(text) == unicode:
+            encoding = wx.FONTENCODING_UNICODE
+        else:
+            raise ValueError("text must be a string or unicode string.")
+        font = wx.Font(size, font_family, italic, bold,
+                       encoding=encoding)
+        font.SetPixelSize(wx.Size(size * 2, size * 2))
+        dc.SetFont(font)
+        w, h = dc.GetTextExtent(text)
+
+        # Do the actual drawing
+        bmp = wx.EmptyBitmap(w, h, -1)
+        dc.SelectObject(bmp)
+        dc.SetPen(wx.TRANSPARENT_PEN)
+        dc.SetBrush(wx.WHITE_BRUSH)
+        dc.DrawRectangle(0, 0, w, h)
+        dc.SetBrush(wx.BLACK_BRUSH)
+        dc.DrawText(text, 0, 0)
+        img = bmp.ConvertToImage()
+        img_str = img.GetData()
+
+        text_image = string_io._from_raw_string(
+          (0, 0), Dim(w, h), RGB, 0, img_str)
+        text_image = text_image.to_onebit()
+        if halign == 1:
+            p = (p[0] - w / 2, p[1])
+        elif halign == 2:
+            p = (p[0] - w, p[1])
+
+        ul = (max(p[0], self.ul_x), max(p[1], self.ul_y))
+        lr = (min(p[0] + w, self.lr_x), min(p[1] + h, self.lr_y))
+        w = lr[0] - ul[0]
+        h = lr[1] - ul[1]
+        if w < 0 or h < 0:
+            return
+
+        text_image = text_image.subimage(
+          (max(self.ul_x - p[0], 0), max(self.ul_y - p[1], 0)),
+          Dim(w, h))
+        if self.data.pixel_type == ONEBIT:
+            subimage = self.subimage(ul, Dim(w, h))
+            if color:
+                subimage.or_image(text_image, in_place=True)
+            else:
+                text_image.invert()
+                subimage.and_image(text_image, in_place=True)
+        elif self.data.pixel_type == RGB:
+            subimage = Image((max(ul[0] - self.ul_x, p[0]),
+                              max(ul[1] - self.ul_y, p[1])),
+                             Dim(w, h), ONEBIT)
+            subimage.or_image(text_image, in_place=True)
+            self.highlight(subimage, color)
+    __call__ = staticmethod(__call__)
+
+    def __doc_example1__(images):
+        from random import randint
+        from gamera.core import Image, Dim
+        image = Image((0, 0), Dim(320, 300), RGB, DENSE)
+
+        # These are some various Unicode encoded names of different
+        # languages (from the wikipedia.org front page).  Just a quick way
+        # to test Unicode support.  I use the long encoding here so this
+        # source file iteself will be portable.
+        names = ['\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8',
+                 '\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa',
+                 '\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9',
+                 '\xc4\x8cesk\xc3\xa1',
+                 'Rom\xc3\xa2n\xc4\x83',
+                 '\xe1\x83\xa5\xe1\x83\x90\xe1\x83\xa0\xe1\x83\x97\xe1\x83\xa3\xe1\x83\x9a\xe1\x83\x98',
+                 '\xd0\x9c\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8',
+                 '\xc3\x8dslenska',
+                 'Lietuvi\xc5\xb3',
+                 'T\xc3\xbcrk\xc3\xa7e']
+
+        try:
+            for i, name in enumerate(names):
+                image.draw_text((160, i * 30),
+                                name, RGBPixel(randint(0, 255), randint(0, 255), randint(0, 255)), 20, halign=1)
+        except:
+            pass
+        return image
+    if sys.platform != 'darwin':
+        doc_examples = [__doc_example1__]
+
+
 class flood_fill(PluginFunction):
-  """
-  Flood fills from the given point using the given color.  This is similar
-  to the "bucket" tool found in many paint programs.
+    """
+    Flood fills from the given point using the given color.  This is similar
+    to the "bucket" tool found in many paint programs.
 
-  The coordinates can be specified either by two integers or one Point:
+    The coordinates can be specified either by two integers or one Point:
 
-  *a*:
-    The start ``Point``.
+    *a*:
+      The start ``Point``.
 
-  *color*:
-    The pixel value to set for the rectangle.
-  """
-  self_type = ImageType([GREYSCALE, FLOAT, ONEBIT, RGB])
-  args = Args([Point("start"), Pixel("color")])
-  doc_examples = [(ONEBIT, (10, 58), 0)]
+    *color*:
+      The pixel value to set for the rectangle.
+    """
+    self_type = ImageType([GREYSCALE, FLOAT, ONEBIT, RGB])
+    args = Args([Point("start"), Pixel("color")])
+    doc_examples = [(ONEBIT, (10, 58), 0)]
+
 
 class remove_border(PluginFunction):
-  """
-  This is a special case of the flood_fill algorithm that is designed
-  to remove dark borders produced by photocopiers or flatbed scanners
-  around the border of the image.
-  """
-  self_type = ImageType([ONEBIT])
+    """
+    This is a special case of the flood_fill algorithm that is designed
+    to remove dark borders produced by photocopiers or flatbed scanners
+    around the border of the image.
+    """
+    self_type = ImageType([ONEBIT])
+
 
 class highlight(PluginFunction):
-  """
-  Highlights all pixels on an image in given color that are black in the
-  passed connected component. The connected component can be part of a
-  different image, it must however lie within the image region.
+    """
+    Highlights all pixels on an image in given color that are black in the
+    passed connected component. The connected component can be part of a
+    different image, it must however lie within the image region.
 
-  *cc*
-    A one-bit connected component from the image
+    *cc*
+      A one-bit connected component from the image
 
-  *color*
-    An color value (RGBPixel, 0-255, or [0|1], depending on the image
-    type) used to color the *cc*.
-  """
-  self_type = ImageType([RGB,GREYSCALE,ONEBIT])
-  args = Args([ImageType([ONEBIT], "cc"), Pixel("color")])
+    *color*
+      An color value (RGBPixel, 0-255, or [0|1], depending on the image
+      type) used to color the *cc*.
+    """
+    self_type = ImageType([RGB, GREYSCALE, ONEBIT])
+    args = Args([ImageType([ONEBIT], "cc"), Pixel("color")])
 
-  def __doc_example1__(images):
-    image = images[ONEBIT]
-    ccs = image.cc_analysis()
-    rgb = image.to_rgb()
-    rgb.highlight(ccs[0], RGBPixel(255, 0, 128))
-    return rgb
-  doc_examples = [__doc_example1__]
+    def __doc_example1__(images):
+        image = images[ONEBIT]
+        ccs = image.cc_analysis()
+        rgb = image.to_rgb()
+        rgb.highlight(ccs[0], RGBPixel(255, 0, 128))
+        return rgb
+    doc_examples = [__doc_example1__]
+
 
 class DrawModule(PluginModule):
-  cpp_headers = ["draw.hpp"]
-  category = "Draw"
-  functions = [draw_line, draw_bezier, draw_marker,
-               draw_hollow_rect, draw_filled_rect, flood_fill,
-               remove_border, highlight, draw_circle,
-               draw_text]
-  author = "Michael Droettboom"
-  url = "http://gamera.sourceforge.net/"
+    cpp_headers = ["draw.hpp"]
+    category = "Draw"
+    functions = [draw_line, draw_bezier, draw_marker,
+                 draw_hollow_rect, draw_filled_rect, flood_fill,
+                 remove_border, highlight, draw_circle,
+                 draw_text]
+    author = "Michael Droettboom"
+    url = "http://gamera.sourceforge.net/"
 
 module = DrawModule()
