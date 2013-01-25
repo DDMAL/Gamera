@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -24,9 +24,11 @@
 
 """Adaptive binarization tools."""
 
-from gamera.plugin import *
-from gamera.args import NoneDefault
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Real, NoneDefault, Args, Int
+from gamera.enums import GREY16, GREYSCALE, FLOAT, ONEBIT
 import _binarization
+
 
 class image_mean(PluginFunction):
     """
@@ -34,7 +36,8 @@ class image_mean(PluginFunction):
     """
     category = "Binarization/RegionInformation"
     return_type = Real("output")
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
+
     def __call__(self):
         return _binarization.image_mean(self)
     __call__ = staticmethod(__call__)
@@ -46,7 +49,8 @@ class image_variance(PluginFunction):
     """
     category = "Binarization/RegionInformation"
     return_type = Real("output")
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
+
     def __call__(self):
         return _binarization.image_variance(self)
     __call__ = staticmethod(__call__)
@@ -61,9 +65,10 @@ class mean_filter(PluginFunction):
     """
     category = "Binarization/RegionInformation"
     return_type = ImageType([FLOAT], "output")
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
     args = Args([Int("region size", default=5)])
     doc_examples = [(GREYSCALE,), (GREY16,), (FLOAT,)]
+
     def __call__(self, region_size=5):
         return _binarization.mean_filter(self, region_size)
     __call__ = staticmethod(__call__)
@@ -81,9 +86,10 @@ class variance_filter(PluginFunction):
     """
     category = "Binarization/RegionInformation"
     return_type = ImageType([FLOAT], "output")
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
     args = Args([ImageType([FLOAT], "means"),
                  Int("region size", default=5)])
+
     def __call__(self, means, region_size=5):
         return _binarization.variance_filter(self, means, region_size)
     __call__ = staticmethod(__call__)
@@ -94,7 +100,7 @@ class wiener_filter(PluginFunction):
     Adaptive Wiener filter for de-noising.
 
     See:
-    
+
     J. Lim. 2001. *Two-Dimensional Signal Processing.* Englewood
     Cliffs: Prentice Hall.
 
@@ -102,16 +108,17 @@ class wiener_filter(PluginFunction):
       The size of the region within which to calculate the filter
       coefficients.
 
-    *noise_variance* 
+    *noise_variance*
       Variance of the noise in the image. If negative, estimated
       automatically as the median of local variances.
     """
     category = "Filter"
-    return_type = ImageType([GREYSCALE,GREY16,FLOAT], "output")
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    return_type = ImageType([GREYSCALE, GREY16, FLOAT], "output")
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
     args = Args([Int("region size", default=5),
                  Real("noise variance", default=-1.0)])
     doc_examples = [(GREYSCALE,), (GREY16,), (FLOAT,)]
+
     def __call__(self, region_size=5, noise_variance=-1):
         return _binarization.wiener_filter(self, region_size, noise_variance)
     __call__ = staticmethod(__call__)
@@ -143,22 +150,23 @@ class niblack_threshold(PluginFunction):
     self_type = ImageType([GREYSCALE])
     args = Args([Int("region size", default=15),
                  Real("sensitivity", default=-0.2),
-                 Int("lower bound", range=(0,255), default=20),
-                 Int("upper bound", range=(0,255), default=150)])
+                 Int("lower bound", range=(0, 255), default=20),
+                 Int("upper bound", range=(0, 255), default=150)])
     doc_examples = [(GREYSCALE,)]
-    def __call__(self, 
-                 region_size=15, 
+
+    def __call__(self,
+                 region_size=15,
                  sensitivity=-0.2,
                  lower_bound=20,
                  upper_bound=150):
-        return _binarization.niblack_threshold(self, 
-                                               region_size, 
+        return _binarization.niblack_threshold(self,
+                                               region_size,
                                                sensitivity,
                                                lower_bound,
                                                upper_bound)
     __call__ = staticmethod(__call__)
 
-   
+
 class sauvola_threshold(PluginFunction):
     """
     Creates a binary image using Sauvola's adaptive algorithm.
@@ -189,22 +197,24 @@ class sauvola_threshold(PluginFunction):
     args = Args([Int("region size", default=15),
                  Real("sensitivity", default=0.5),
                  Int("dynamic range", range=(1, 255), default=128),
-                 Int("lower bound", range=(0,255), default=20),
-                 Int("upper bound", range=(0,255), default=150)])
+                 Int("lower bound", range=(0, 255), default=20),
+                 Int("upper bound", range=(0, 255), default=150)])
     doc_examples = [(GREYSCALE,)]
-    def __call__(self, 
-                 region_size=15, 
-                 sensitivity=0.5, 
+
+    def __call__(self,
+                 region_size=15,
+                 sensitivity=0.5,
                  dynamic_range=128,
                  lower_bound=20,
                  upper_bound=150):
-        return _binarization.sauvola_threshold(self, 
-                                               region_size, 
-                                               sensitivity, 
+        return _binarization.sauvola_threshold(self,
+                                               region_size,
+                                               sensitivity,
                                                dynamic_range,
                                                lower_bound,
                                                upper_bound)
     __call__ = staticmethod(__call__)
+
 
 class gatos_background(PluginFunction):
     """
@@ -216,7 +226,7 @@ class gatos_background(PluginFunction):
     quality historical documents. *Lecture Notes in Computer
     Science* 3163: 102--113.
 
-    *region_size* 
+    *region_size*
       Region size for interpolation.
 
     *binarization*
@@ -227,10 +237,11 @@ class gatos_background(PluginFunction):
     self_type = ImageType([GREYSCALE])
     args = Args([ImageType([ONEBIT], "binarization"),
                  Int("region size", default=15)])
+
     def __call__(self, binarization, region_size=15):
         return _binarization.gatos_background(self, binarization, region_size)
     __call__ = staticmethod(__call__)
-        
+
 
 class gatos_threshold(PluginFunction):
     """
@@ -257,12 +268,13 @@ class gatos_threshold(PluginFunction):
                  Real("q", default=0.6),
                  Real("p1", default=0.5),
                  Real("p2", default=0.8)])
+
     def __call__(self, background, binarization, q=0.6, p1=0.5, p2=0.8):
-        return _binarization.gatos_threshold(self, 
-                                             background, 
-                                             binarization, 
-                                             q, 
-                                             p1, 
+        return _binarization.gatos_threshold(self,
+                                             background,
+                                             binarization,
+                                             q,
+                                             p1,
                                              p2)
     __call__ = staticmethod(__call__)
 
@@ -325,16 +337,16 @@ class white_rohrer_threshold(PluginFunction):
                  Int("y lookahead", default=1),
                  Int("bias mode", default=0),
                  Int("bias factor", default=100),
-                 Int("f factor",default=100),
-                 Int("g factor",default=100)])
+                 Int("f factor", default=100),
+                 Int("g factor", default=100)])
     author = "Uma Kompella (using code from the XITE library)"
     doc_examples = [(GREYSCALE,)]
 
     def __call__(self, x_lookahead=8, y_lookahead=1, bias_mode=0,
                  bias_factor=100, f_factor=100, g_factor=100):
         return _binarization.white_rohrer_threshold(
-            self, 
-            x_lookahead, 
+            self,
+            x_lookahead,
             y_lookahead,
             bias_mode,
             bias_factor,
@@ -366,7 +378,7 @@ class shading_subtraction(PluginFunction):
 
     .. _otsu_find_threshold: binarization.html#otsu-find-threshold
 
-    Reference: K.D. Toennies: *Grundlagen der Bildverarbeitung.* 
+    Reference: K.D. Toennies: *Grundlagen der Bildverarbeitung.*
     Pearson Studium, 2005, p.202
     """
     author = "Christoph Dalitz"
@@ -378,7 +390,7 @@ class shading_subtraction(PluginFunction):
 
     def __call__(self, k=7, threshold=None):
         #background = self.rank(k*k,k,border_treatment=1)
-        background = self.min_max_filter(k,1)
+        background = self.min_max_filter(k, 1)
         backfloat = background.to_float()
         imgfloat = self.to_float()
         difffloat = backfloat.subtract_images(imgfloat)
@@ -393,9 +405,10 @@ class shading_subtraction(PluginFunction):
 
     __call__ = staticmethod(__call__)
 
+
 class brink_threshold(PluginFunction):
     """
-    Calculates threshold for image with Brink and Pendock's minimum-cross    
+    Calculates threshold for image with Brink and Pendock's minimum-cross
     entropy method and returns corrected image. It is best used for binarising
     images with dark, near-black foreground and significant bleed-through.
     To that end, it generally predicts lower thresholds than other
@@ -408,6 +421,7 @@ class brink_threshold(PluginFunction):
     self_type = ImageType([GREYSCALE])
     return_type = ImageType([ONEBIT], "onebit")
     doc_examples = [(GREYSCALE,)]
+
     def __call__(self):
         return _binarization.brink_threshold(self)
     __call__ = staticmethod(__call__)
@@ -421,7 +435,7 @@ class BinarizationGenerator(PluginModule):
                  mean_filter,
                  variance_filter,
                  wiener_filter,
-                 niblack_threshold, 
+                 niblack_threshold,
                  sauvola_threshold,
                  gatos_background,
                  gatos_threshold,
@@ -432,4 +446,3 @@ class BinarizationGenerator(PluginModule):
     url = "http://gamera.sourceforge.net/"
 
 module = BinarizationGenerator()
-
