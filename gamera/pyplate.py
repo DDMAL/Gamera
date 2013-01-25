@@ -47,14 +47,17 @@ PyPlate defines the following directives:
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
 from __future__ import nested_scopes
-import sys, string, re, util, cStringIO, codecs
+import sys
+import re
+import cStringIO
+from gamera import util
 
 re_directive = re.compile("\[\[(.*?)\]\]")
 re_for_loop = re.compile("for (.*) in (.*)")
@@ -67,362 +70,378 @@ re_comment = re.compile("#(.*)#")
 
 re_clean_whitespace = re.compile(r"\]\]\s+?")
 
+
 ############################################################
 # Template parser
 class ParserException(Exception):
-   def __init__(self, lineno, s):
-      Exception.__init__(self, "line %d: %s" % (lineno, s))
+    def __init__(self, lineno, s):
+        Exception.__init__(self, "line %d: %s" % (lineno, s))
+
 
 class Template:
-   def __init__(self, filename=None):
-      if filename != None:
-         try:
-            self.parse_file(filename)
-         except:
-            self.parse_string(filename)
+    def __init__(self, filename=None):
+        if filename != None:
+            try:
+                self.parse_file(filename)
+            except:
+                self.parse_string(filename)
 
-   def parse_file(self, filename):
-      file = open(filename, 'r')
-      self.parse(file)
-      file.close()
+    def parse_file(self, filename):
+        file = open(filename, 'r')
+        self.parse(file)
+        file.close()
 
-   def parse_string(self, template):
-      file = cStringIO.StringIO(template)
-      self.parse(file)
-      file.close()
+    def parse_string(self, template):
+        file = cStringIO.StringIO(template)
+        self.parse(file)
+        file.close()
 
-   def parse(self, file):
-      self.file = file
-      self.line = re_clean_whitespace.sub("]]", self.file.read())
-      self.lineno = 0
-      self.functions = {}
-      self.tree = TopLevelTemplateNode(self)
+    def parse(self, file):
+        self.file = file
+        self.line = re_clean_whitespace.sub("]]", self.file.read())
+        self.lineno = 0
+        self.functions = {}
+        self.tree = TopLevelTemplateNode(self)
 
-   def parser_get(self):
-      if self.line == '':
-         return None
-      return self.line
+    def parser_get(self):
+        if self.line == '':
+            return None
+        return self.line
 
-   def parser_eat(self, chars):
-      self.lineno = self.lineno + self.line[:chars].count("\n")
-      self.line = self.line[chars:]
+    def parser_eat(self, chars):
+        self.lineno = self.lineno + self.line[:chars].count("\n")
+        self.line = self.line[chars:]
 
-   def parser_exception(self, s, e=None):
-      import traceback
-      if e != None:
-         traceback.print_exc()
-      raise ParserException(self.lineno, s)
+    def parser_exception(self, s, e=None):
+        import traceback
+        if e != None:
+            traceback.print_exc()
+        raise ParserException(self.lineno, s)
 
-   def execute_file(self, filename, data={}):
-      output = self.execute_string(data)
-      file = open(filename, 'w')
-      file.write(output)
-      file.write("\n")
-      file.close()
+    def execute_file(self, filename, data={}):
+        output = self.execute_string(data)
+        file = open(filename, 'w')
+        file.write(output)
+        file.write("\n")
+        file.close()
 
-   def execute_string(self, data={}):
-      data_copy = {}
-      data_copy.update(data)
-      s = cStringIO.StringIO()
-      self.execute(s, data_copy)
-      s.write("\n")
-      return s.getvalue()
+    def execute_string(self, data={}):
+        data_copy = {}
+        data_copy.update(data)
+        s = cStringIO.StringIO()
+        self.execute(s, data_copy)
+        s.write("\n")
+        return s.getvalue()
 
-   def execute_stdout(self, data={}):
-      data_copy = {}
-      data_copy.update(data)
-      self.execute(sys.stdout, data_copy)
-      sys.stdout.write("\n")
+    def execute_stdout(self, data={}):
+        data_copy = {}
+        data_copy.update(data)
+        self.execute(sys.stdout, data_copy)
+        sys.stdout.write("\n")
 
-   def execute(self, stream=sys.stdout, data={}):
-      self.tree.execute(stream, data)
+    def execute(self, stream=sys.stdout, data={}):
+        self.tree.execute(stream, data)
 
-   def __repr__(self):
-      return repr(self.tree)
+    def __repr__(self):
+        return repr(self.tree)
 
 
 ############################################################
 # NODES
 class TemplateNode:
-   def __init__(self, parent, s):
-      self.parent = parent
-      self.s = s
-      self.node_list = []
-      while 1:
-         new_node = TemplateNodeFactory(parent)
-         if self.add_node(new_node):
-            break
+    def __init__(self, parent, s):
+        self.parent = parent
+        self.s = s
+        self.node_list = []
+        while 1:
+            new_node = TemplateNodeFactory(parent)
+            if self.add_node(new_node):
+                break
 
-   def add_node(self, node):
-      if node == 'end':
-         return 1
-      elif node != None:
-         self.node_list.append(node)
-      else:
-         raise self.parent.parser_exception(
-           "[[%s]] does not have a matching [[end]]" % self.s)
+    def add_node(self, node):
+        if node == 'end':
+            return 1
+        elif node != None:
+            self.node_list.append(node)
+        else:
+            raise self.parent.parser_exception(
+              "[[%s]] does not have a matching [[end]]" % self.s)
 
-   def execute(self, stream, data):
-      for node in self.node_list:
-         node.execute(stream, data)
+    def execute(self, stream, data):
+        for node in self.node_list:
+            node.execute(stream, data)
 
-   def __repr__(self):
-      r = "<" + self.__class__.__name__ + " "
-      for i in self.node_list:
-         r = r + repr(i)
-      r = r + ">"
-      return r
+    def __repr__(self):
+        r = "<" + self.__class__.__name__ + " "
+        for i in self.node_list:
+            r = r + repr(i)
+        r = r + ">"
+        return r
+
 
 class TopLevelTemplateNode(TemplateNode):
-   def __init__(self, parent):
-      TemplateNode.__init__(self, parent, '')
+    def __init__(self, parent):
+        TemplateNode.__init__(self, parent, '')
 
-   def add_node(self, node):
-      if node != None:
-         self.node_list.append(node)
-      else:
-         return 1
+    def add_node(self, node):
+        if node != None:
+            self.node_list.append(node)
+        else:
+            return 1
+
 
 class ForTemplateNode(TemplateNode):
-   def __init__(self, parent, s):
-      TemplateNode.__init__(self, parent, s)
-      match = re_for_loop.match(s)
-      if match == None:
-         raise self.parent.parser_exception(
-           "[[%s]] is not a valid for-loop expression" % self.s)
-      else:
-         self.vars_temp = match.group(1).split(",")
-         self.vars = []
-         for v in self.vars_temp:
-            self.vars.append(v.strip())
-         self.expression = match.group(2)
+    def __init__(self, parent, s):
+        TemplateNode.__init__(self, parent, s)
+        match = re_for_loop.match(s)
+        if match == None:
+            raise self.parent.parser_exception(
+              "[[%s]] is not a valid for-loop expression" % self.s)
+        else:
+            self.vars_temp = match.group(1).split(",")
+            self.vars = []
+            for v in self.vars_temp:
+                self.vars.append(v.strip())
+            self.expression = match.group(2)
 
-   def execute(self, stream, data):
-      remember_vars = {}
-      for var in self.vars:
-         if data.has_key(var):
-            remember_vars[var] = data[var]
-      try:
-         x = eval(self.expression, globals(), data)
-      except Exception, e:
-         self.parent.parser_exception(self.expression, e)
-      for list in x:
-         if util.is_sequence(list):
-            if len(self.vars) == 1:
-               data[self.vars[0]] = list
-            elif len(self.vars) == len(list):
-               for index, value in util.enumerate(list):
-                  data[self.vars[index]] = value
+    def execute(self, stream, data):
+        remember_vars = {}
+        for var in self.vars:
+            if data.has_key(var):
+                remember_vars[var] = data[var]
+        try:
+            x = eval(self.expression, globals(), data)
+        except Exception, e:
+            self.parent.parser_exception(self.expression, e)
+        for list in x:
+            if util.is_sequence(list):
+                if len(self.vars) == 1:
+                    data[self.vars[0]] = list
+                elif len(self.vars) == len(list):
+                    for index, value in util.enumerate(list):
+                        data[self.vars[index]] = value
+                else:
+                    self.parent.parser_exception(
+                      "Unable to unpack tuples in [[%s]]" % self.s)
             else:
-               self.parent.parser_exception(
-                 "Unable to unpack tuples in [[%s]]" % self.s)
-         else:
-            data[self.vars[0]] = list
-         TemplateNode.execute(self, stream, data)
-      for key, value in remember_vars.items():
-         data[key] = value
+                data[self.vars[0]] = list
+            TemplateNode.execute(self, stream, data)
+        for key, value in remember_vars.items():
+            data[key] = value
+
 
 class IfTemplateNode(TemplateNode):
-   def __init__(self, parent, s):
-      self.else_node = None
-      TemplateNode.__init__(self, parent, s)
-      match = re_if.match(s)
-      if match == None:
-         raise self.parent.parser_exception(
-           "[[%s]] is not a valid if expression" % self.s)
-      else:
-         self.expression = match.group(1)
+    def __init__(self, parent, s):
+        self.else_node = None
+        TemplateNode.__init__(self, parent, s)
+        match = re_if.match(s)
+        if match == None:
+            raise self.parent.parser_exception(
+              "[[%s]] is not a valid if expression" % self.s)
+        else:
+            self.expression = match.group(1)
 
-   def add_node(self, node):
-      if node == 'end':
-         return 1
-      elif isinstance(node, ElseTemplateNode):
-         self.else_node = node
-         return 1
-      elif isinstance(node, ElifTemplateNode):
-         self.else_node = node
-         return 1
-      elif node != None:
-         self.node_list.append(node)
-      else:
-         raise self.parent.parser_exception(
-           "[[%s]] does not have a matching [[end]]" % self.s)
+    def add_node(self, node):
+        if node == 'end':
+            return 1
+        elif isinstance(node, ElseTemplateNode):
+            self.else_node = node
+            return 1
+        elif isinstance(node, ElifTemplateNode):
+            self.else_node = node
+            return 1
+        elif node != None:
+            self.node_list.append(node)
+        else:
+            raise self.parent.parser_exception(
+              "[[%s]] does not have a matching [[end]]" % self.s)
 
-   def execute(self, stream, data):
-      try:
-         x = eval(self.expression, globals(), data)
-      except Exception, e:
-         self.parent.parser_exception(self.expression, e)
-      if x:
-         TemplateNode.execute(self, stream, data)
-      elif self.else_node != None:
-         self.else_node.execute(stream, data)
+    def execute(self, stream, data):
+        try:
+            print self.expression
+            x = eval(self.expression, globals(), data)
+        except Exception, e:
+            self.parent.parser_exception(self.expression, e)
+        if x:
+            TemplateNode.execute(self, stream, data)
+        elif self.else_node != None:
+            self.else_node.execute(stream, data)
+
 
 class ElifTemplateNode(IfTemplateNode):
-   def __init__(self, parent, s):
-      self.else_node = None
-      TemplateNode.__init__(self, parent, s)
-      match = re_elif.match(s)
-      if match == None:
-         self.parent.parser_exception(
-           "[[%s]] is not a valid elif expression" % self.s)
-      else:
-         self.expression = match.group(1)
+    def __init__(self, parent, s):
+        self.else_node = None
+        TemplateNode.__init__(self, parent, s)
+        match = re_elif.match(s)
+        if match == None:
+            self.parent.parser_exception(
+              "[[%s]] is not a valid elif expression" % self.s)
+        else:
+            self.expression = match.group(1)
+
 
 class ElseTemplateNode(TemplateNode):
-   pass
+    pass
+
 
 class FunctionTemplateNode(TemplateNode):
-   def __init__(self, parent, s):
-      TemplateNode.__init__(self, parent, s)
-      match = re_def.match(s)
-      if match == None:
-         self.parent.parser_exception(
-           "[[%s]] is not a valid function definition" % self.s)
-      self.function_name = match.group(1)
-      self.vars_temp = match.group(2).split(",")
-      self.vars = []
-      for v in self.vars_temp:
-         self.vars.append(v.strip())
-      self.parent.functions[self.function_name] = self
+    def __init__(self, parent, s):
+        TemplateNode.__init__(self, parent, s)
+        match = re_def.match(s)
+        if match == None:
+            self.parent.parser_exception(
+              "[[%s]] is not a valid function definition" % self.s)
+        self.function_name = match.group(1)
+        self.vars_temp = match.group(2).split(",")
+        self.vars = []
+        for v in self.vars_temp:
+            self.vars.append(v.strip())
+        self.parent.functions[self.function_name] = self
 
-   def execute(self, stream, data):
-      pass
+    def execute(self, stream, data):
+        pass
 
-   def call(self, args, stream, data):
-      remember_vars = {}
-      for index, var in util.enumerate(self.vars):
-         if data.has_key(var):
-            remember_vars[var] = data[var]
-         data[var] = args[index]
-      TemplateNode.execute(self, stream, data)
-      for key, value in remember_vars.items():
-         data[key] = value
+    def call(self, args, stream, data):
+        remember_vars = {}
+        for index, var in util.enumerate(self.vars):
+            if data.has_key(var):
+                remember_vars[var] = data[var]
+            data[var] = args[index]
+        TemplateNode.execute(self, stream, data)
+        for key, value in remember_vars.items():
+            data[key] = value
+
 
 class LeafTemplateNode(TemplateNode):
-   def __init__(self, parent, s):
-      self.parent = parent
-      self.s = s
+    def __init__(self, parent, s):
+        self.parent = parent
+        self.s = s
 
-   def execute(self, stream, data):
-      stream.write(self.s)
+    def execute(self, stream, data):
+        stream.write(self.s)
 
-   def __repr__(self):
-      return "<" + self.__class__.__name__ + ">"
+    def __repr__(self):
+        return "<" + self.__class__.__name__ + ">"
+
 
 class CommentTemplateNode(LeafTemplateNode):
-   def execute(self, stream, data):
-      pass
+    def execute(self, stream, data):
+        pass
+
 
 class ExpressionTemplateNode(LeafTemplateNode):
-   def execute(self, stream, data):
-      try:
-         stream.write(unicode(eval(self.s, globals(), data)).encode("utf-8"))
-      except Exception, e:
-         self.parent.parser_exception(self.s, e)
+    def execute(self, stream, data):
+        try:
+            stream.write(unicode(eval(self.s, globals(), data)).encode("utf-8"))
+        except Exception, e:
+            self.parent.parser_exception(self.s, e)
+
 
 class ExecTemplateNode(LeafTemplateNode):
-   def __init__(self, parent, s):
-      LeafTemplateNode.__init__(self, parent, s)
-      match = re_exec.match(s)
-      if match == None:
-         self.parent.parser_exception(
-           "[[%s]] is not a valid statement" % self.s)
-      self.s = match.group(1)
+    def __init__(self, parent, s):
+        LeafTemplateNode.__init__(self, parent, s)
+        match = re_exec.match(s)
+        if match == None:
+            self.parent.parser_exception(
+              "[[%s]] is not a valid statement" % self.s)
+        self.s = match.group(1)
 
-   def execute(self, stream, data):
-      try:
-         exec(self.s, globals(), data)
-      except Exception, e:
-         self.parent.parser_exception(self.s, e)
+    def execute(self, stream, data):
+        try:
+            exec(self.s, globals(), data)
+        except Exception, e:
+            self.parent.parser_exception(self.s, e)
+
 
 class CallTemplateNode(LeafTemplateNode):
-   def __init__(self, parent, s):
-      LeafTemplateNode.__init__(self, parent, s)
-      match = re_call.match(s)
-      if match == None:
-         self.parent.parser_exception(
-           "[[%s]] is not a valid function call" % self.s)
-      self.function_name = match.group(1)
-      self.vars = "(" + match.group(2).strip() + ",)"
+    def __init__(self, parent, s):
+        LeafTemplateNode.__init__(self, parent, s)
+        match = re_call.match(s)
+        if match == None:
+            self.parent.parser_exception(
+              "[[%s]] is not a valid function call" % self.s)
+        self.function_name = match.group(1)
+        self.vars = "(" + match.group(2).strip() + ",)"
 
-   def execute(self, stream, data):
-      try:
-         x = eval(self.vars, globals(), data)
-      except Exception, e:
-         self.parent.parser_exception(self.vars, e)
-      self.parent.functions[self.function_name].call(
-        x, stream, data)
+    def execute(self, stream, data):
+        try:
+            x = eval(self.vars, globals(), data)
+        except Exception, e:
+            self.parent.parser_exception(self.vars, e)
+        self.parent.functions[self.function_name].call(
+          x, stream, data)
 
 
 ############################################################
 # Node factory
 template_factory_type_map = {
-  'if'   : IfTemplateNode,
-  'for'  : ForTemplateNode,
-  'elif' : ElifTemplateNode,
-  'else' : ElseTemplateNode,
-  'def'  : FunctionTemplateNode,
-  'call' : CallTemplateNode,
-  'exec' : ExecTemplateNode }
+  'if': IfTemplateNode,
+  'for': ForTemplateNode,
+  'elif': ElifTemplateNode,
+  'else': ElseTemplateNode,
+  'def': FunctionTemplateNode,
+  'call': CallTemplateNode,
+  'exec': ExecTemplateNode
+}
 template_factory_types = template_factory_type_map.keys()
 
-def TemplateNodeFactory(parent):
-   src = parent.parser_get()
 
-   if src == None:
-      return None
-   match = re_directive.search(src)
-   if match == None:
-      parent.parser_eat(len(src))
-      return LeafTemplateNode(parent, src)
-   elif src == '' or match.start() != 0:
-      parent.parser_eat(match.start())
-      return LeafTemplateNode(parent, src[:match.start()])
-   else:
-      directive = match.group()[2:-2].strip()
-      parent.parser_eat(match.end())
-      if directive == 'end':
-         return 'end'
-      elif re_comment.match(directive):
-         return CommentTemplateNode(parent, directive)
-      else:
-         for i in template_factory_types:
-            if directive[0:len(i)] == i:
-               return template_factory_type_map[i](parent, directive)
-         return ExpressionTemplateNode(parent, directive)
+def TemplateNodeFactory(parent):
+    src = parent.parser_get()
+
+    if src == None:
+        return None
+    match = re_directive.search(src)
+    if match == None:
+        parent.parser_eat(len(src))
+        return LeafTemplateNode(parent, src)
+    elif src == '' or match.start() != 0:
+        parent.parser_eat(match.start())
+        return LeafTemplateNode(parent, src[:match.start()])
+    else:
+        directive = match.group()[2:-2].strip()
+        parent.parser_eat(match.end())
+        if directive == 'end':
+            return 'end'
+        elif re_comment.match(directive):
+            return CommentTemplateNode(parent, directive)
+        else:
+            for i in template_factory_types:
+                if directive[0:len(i)] == i:
+                    return template_factory_type_map[i](parent, directive)
+            return ExpressionTemplateNode(parent, directive)
 
 
 ############################################################
 # TESTING CODE
 if __name__ == '__main__':
-   combinations = (('OneBit', 'Float', 'GreyScale'),
-                   ('GreyScale', 'RGB'))
+    combinations = (('OneBit', 'Float', 'GreyScale'),
+                    ('GreyScale', 'RGB'))
 
-   template = Template("""
-   [[# This is a comment #]]
-   [[# This example does recursive function calls need to generate feature combinations #]]
-   [[def switch(layer, args)]]
-      switch(m[[layer]].id) {
-      [[for option in combinations[layer] ]]
-      [[exec current = option + '(m' + str(layer) + ')']]
-      case [[option]]:
-        [[if layer == layers - 1]]
-          function_call([[string.join(args + [current], ',')]]);
-        [[else]]
-          [[call switch(layer + 1, args + [current])]]
-        [[end]]
-      break;
-      [[end]]
-      }
-   [[end]]
+    template = Template("""
+    [[# This is a comment #]]
+    [[# This example does recursive function calls need to generate feature combinations #]]
+    [[def switch(layer, args)]]
+       switch(m[[layer]].id) {
+       [[for option in combinations[layer] ]]
+       [[exec current = option + '(m' + str(layer) + ')']]
+       case [[option]]:
+         [[if layer == layers - 1]]
+           function_call([[string.join(args + [current], ',')]]);
+         [[else]]
+           [[call switch(layer + 1, args + [current])]]
+         [[end]]
+       break;
+       [[end]]
+       }
+    [[end]]
 
-   PyObject *py_overload_resolution_[[function_name]](PyObject *args) {
-   [[call switch(0, [])]]
-   }
-   """)
+    PyObject *py_overload_resolution_[[function_name]](PyObject *args) {
+    [[call switch(0, [])]]
+    }
+    """)
 
-   data = {'combinations'  : combinations,
-           'function_name' : 'threshold',
-           'layers'        : 2}
-   template.execute(sys.stdout, data)
+    data = {'combinations': combinations,
+            'function_name': 'threshold',
+            'layers': 2}
+    template.execute(sys.stdout, data)
