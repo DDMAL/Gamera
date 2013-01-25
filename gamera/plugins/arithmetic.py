@@ -11,7 +11,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#  
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -20,17 +20,21 @@
 """The image utilities module contains plugins for copy, rotating, resizing,
 and computing histograms."""
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Check, Args
+from gamera.enums import GREYSCALE, GREY16, FLOAT, RGB, COMPLEX, ONEBIT, ALL
 import _arithmetic
 import _logical
 
 ARITHMETIC_TYPES = [GREYSCALE, GREY16, FLOAT, RGB, COMPLEX]
+
 
 class ArithmeticCombine(PluginFunction):
     self_type = ImageType(ARITHMETIC_TYPES)
     args = Args([ImageType(ARITHMETIC_TYPES, 'other'), Check('in_place', default=False)])
     return_type = ImageType(ARITHMETIC_TYPES)
     image_types_must_match = True
+
 
 class add_images(ArithmeticCombine):
     """
@@ -48,9 +52,9 @@ class add_images(ArithmeticCombine):
       contents of the current image.
     """
     def __call__(self, other, in_place=False):
-       if self.data.pixel_type == ONEBIT:
-           return _logical.or_image(self, other, in_place)
-       return _arithmetic.add_images(self, other, in_place)
+        if self.data.pixel_type == ONEBIT:
+            return _logical.or_image(self, other, in_place)
+        return _arithmetic.add_images(self, other, in_place)
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
@@ -59,6 +63,7 @@ class add_images(ArithmeticCombine):
         clipped = rgb.clip_image(greyscale)
         return [clipped, greyscale, clipped.add_images(greyscale.to_rgb(), False)]
     doc_examples = [__doc_example1__]
+
 
 class subtract_images(ArithmeticCombine):
     """
@@ -80,7 +85,7 @@ class subtract_images(ArithmeticCombine):
     return_type = ImageType(ALL)
 
     def __call__(self, other, in_place=False):
-       return _arithmetic.subtract_images(self, other, in_place)
+        return _arithmetic.subtract_images(self, other, in_place)
     __call__ = staticmethod(__call__)
 
     def __doc_example1__(images):
@@ -89,6 +94,7 @@ class subtract_images(ArithmeticCombine):
         clipped = rgb.clip_image(greyscale)
         return [clipped, greyscale, clipped.subtract_images(greyscale.to_rgb(), False)]
     doc_examples = [__doc_example1__]
+
 
 class divide_images(ArithmeticCombine):
     """
@@ -110,10 +116,11 @@ class divide_images(ArithmeticCombine):
     args = Args([ImageType([GREYSCALE, GREY16, FLOAT], 'other'),
                  Check("in_place", default=False)])
     return_type = ImageType([GREYSCALE, GREY16, FLOAT])
-                  
+
     def __call__(self, other, in_place=False):
-       return _arithmetic.divide_images(self, other, in_place)
+        return _arithmetic.divide_images(self, other, in_place)
     __call__ = staticmethod(__call__)
+
 
 class multiply_images(ArithmeticCombine):
     """
@@ -131,18 +138,19 @@ class multiply_images(ArithmeticCombine):
       contents of the current image.
     """
     def __call__(self, other, in_place=False):
-       if self.data.pixel_type == ONEBIT:
-           return _logical.and_image(self, other, in_place)
-       return _arithmetic.multiply_images(self, other, in_place)
+        if self.data.pixel_type == ONEBIT:
+            return _logical.and_image(self, other, in_place)
+        return _arithmetic.multiply_images(self, other, in_place)
     __call__ = staticmethod(__call__)
 
+
 class ArithmeticModule(PluginModule):
-    cpp_headers=["arithmetic.hpp"]
+    cpp_headers = ["arithmetic.hpp"]
     category = "Combine/Arithmetic"
     functions = [add_images, subtract_images, multiply_images, divide_images]
     author = "Michael Droettboom"
     url = "http://gamera.sourceforge.net/"
 module = ArithmeticModule()
-    
+
 del ARITHMETIC_TYPES
 del ArithmeticCombine
