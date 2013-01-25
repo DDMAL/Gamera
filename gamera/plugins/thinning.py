@@ -11,19 +11,24 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType
+from gamera.enums import ONEBIT
+
 import _thinning
+
 
 class Thinning(PluginFunction):
     self_type = ImageType([ONEBIT])
     return_type = ImageType([ONEBIT])
     doc_examples = [(ONEBIT,)]
+
 
 class thin_zs(Thinning):
     """
@@ -36,13 +41,13 @@ class thin_zs(Thinning):
 
     T. Y. Zhang and C. Y. Suen. 1984.  A Fast Parallel Algorithm for
     Thinning Digital Patterns., *Communications of ACM*, 2(3).
-  
+
     R. C. Gonzalez and P. Wintz. 1987 *Digital Image Processing.*,
     2. edition. 398-402.
     """
     pass
 
-    
+
 class thin_hs(Thinning):
     """
     Derives the medial axis transformation from a ONEBIT image using the
@@ -60,11 +65,14 @@ class thin_hs(Thinning):
     """
     pass
 
+
 class medial_axis_transform_hs(Thinning):
     """"This function is an alias for thin_hs_."""
     pure_python = True
+
     def __call__(self):
         return _thinning.thin_hs(self)
+
 
 class thin_hs_large_image(Thinning):
     """
@@ -80,6 +88,7 @@ class thin_hs_large_image(Thinning):
     reset afterwards with reset_onebit_image().
     """
     pure_python = True
+
     def __call__(self):
         copy = self.image_copy()
         ccs = copy.cc_analysis()
@@ -89,13 +98,16 @@ class thin_hs_large_image(Thinning):
         return copy
     __call__ = staticmethod(__call__)
 
+
 class medial_axis_transform_large_image_hs(Thinning):
     """
     This function is an alias for thin_hs_large_image_.
     """
     pure_python = True
+
     def __call__(self):
         return thin_hs_large_image()(self)
+
 
 class thin_lc(Thinning):
     """
@@ -105,7 +117,7 @@ class thin_lc(Thinning):
     This function is a simple extension to the Zhang and Suen
     algorithm in thin_zs_ that ensure that no two pixels are more than
     4-connected.
-    
+
     The resulting skeleton is not a medial axis transformation, and
     the ends of the skeleton will not extend to the edges of the
     original image.
@@ -115,6 +127,7 @@ class thin_lc(Thinning):
     543-552.
     """
     pass
+
 
 class ThinningModule(PluginModule):
     category = "Thinning"
