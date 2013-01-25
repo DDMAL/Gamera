@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -18,7 +18,10 @@
 """Data transfer between Gamera and the Python Imaging Library.
 """
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Class
+from gamera.enums import RGB, GREYSCALE, FLOAT, DENSE
+
 from gamera import config
 
 try:
@@ -34,10 +37,10 @@ except ImportError:
                'could not be imported')
 else:
 
-    _modes = {RGB       : 'RGB',
-              GREYSCALE : 'L'}
+    _modes = {RGB: 'RGB',
+              GREYSCALE: 'L'}
     _inverse_modes = {'RGB': RGB,
-                      'L'  : GREYSCALE}
+                      'L': GREYSCALE}
     ## also boolean mode '1' --- I think this is 8 bits per pixel
 
     class from_pil(PluginFunction):
@@ -93,6 +96,7 @@ else:
         """
         self_type = ImageType([RGB, GREYSCALE])
         return_type = Class("pil_image")
+
         def __call__(image):
             from gamera.plugins import _string_io
             pixel_type = image.data.pixel_type
@@ -110,6 +114,7 @@ else:
             array = image.to_pil()
             image0 = from_pil(array)
             return [image, image0]
+
         def __doc_example2__(images):
             image = images[GREYSCALE]
             array = image.to_pil()
