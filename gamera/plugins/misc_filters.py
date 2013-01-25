@@ -13,70 +13,78 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Int, Choice, Float
+from gamera.enums import ONEBIT, GREYSCALE, GREY16, FLOAT
+
 import _misc_filters
 
+
 class rank(PluginFunction):
-  """
-  Within each *k* times *k* window, set the center pixel to the *r*-th ranked
-  value.
+    """
+    Within each *k* times *k* window, set the center pixel to the *r*-th ranked
+    value.
 
-  Note that for ``Onebit`` images, actually *rank(k*k - r + 1)* is computed instead
-  of *rank(r)*. This has the effect that you do not need to worry whether
-  your image is a greyscale or onebit image: in all cases low values
-  for *r* will darken the image and high values will light it up.
+    Note that for ``Onebit`` images, actually *rank(k*k - r + 1)* is computed instead
+    of *rank(r)*. This has the effect that you do not need to worry whether
+    your image is a greyscale or onebit image: in all cases low values
+    for *r* will darken the image and high values will light it up.
 
-  *rank* (1, 2, ..., *k* * *k*)
-    The rank of the windows pixels to select for the center. (k*k+1)/2 is
-    equivalent to the median.
+    *rank* (1, 2, ..., *k* * *k*)
+      The rank of the windows pixels to select for the center. (k*k+1)/2 is
+      equivalent to the median.
 
-  *k* (3, 5 ,7, ...)
-    The window size (must be odd).
+    *k* (3, 5 ,7, ...)
+      The window size (must be odd).
 
-  *border_treatment* (0, 1)
-    When 0 ('padwhite'), window pixels outside the image are set to white.
-    When 1 ('reflect'), reflecting boundary conditions are used.
-  """
-  self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
-  args = Args([Int('rank'), Int('k', default=3),
-               Choice('border_treatment', ['padwhite', 'reflect'], default=1)])
-  return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
-  author = "Christoph Dalitz and David Kolanus"
-  doc_examples = [(GREYSCALE, 2), (GREYSCALE, 5), (GREYSCALE, 8)]
-  def __call__(self, rank, k=3, border_treatment=1):
-    if k%2 == 0:
-      raise RuntimeError("rank: window size k must be odd")
-    if rank < 1 or rank > k*k:
-      raise RuntimeError("rank: rank must be between 1 and k*k")
-    return _misc_filters.rank(self, rank, k, border_treatment)
-  __call__ = staticmethod(__call__)
+    *border_treatment* (0, 1)
+      When 0 ('padwhite'), window pixels outside the image are set to white.
+      When 1 ('reflect'), reflecting boundary conditions are used.
+    """
+    self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
+    args = Args([Int('rank'), Int('k', default=3),
+                 Choice('border_treatment', ['padwhite', 'reflect'], default=1)])
+    return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
+    author = "Christoph Dalitz and David Kolanus"
+    doc_examples = [(GREYSCALE, 2), (GREYSCALE, 5), (GREYSCALE, 8)]
+
+    def __call__(self, rank, k=3, border_treatment=1):
+        if k % 2 == 0:
+            raise RuntimeError("rank: window size k must be odd")
+        if rank < 1 or rank > k * k:
+            raise RuntimeError("rank: rank must be between 1 and k*k")
+        return _misc_filters.rank(self, rank, k, border_treatment)
+    __call__ = staticmethod(__call__)
+
 
 class mean(PluginFunction):
-  """
-  Within each *k* times *k* window, set the center pixel to the mean
-  value of all pixels.
+    """
+    Within each *k* times *k* window, set the center pixel to the mean
+    value of all pixels.
 
-  *k* is the window size (must be odd), and *border_treatment* can
-  be 0 ('padwhite'), which sets window pixels outside the image to white,
-  or 1 ('reflect'), for reflecting boundary conditions.
-  """
-  self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
-  args = Args([Int('k', default=3),
-               Choice('border_treatment', ['padwhite', 'reflect'], default=1)])
-  doc_examples = [(GREYSCALE,)]
-  return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
-  author = "David Kolanus"
-  def __call__(self, k=3, border_treatment=1):
-    if k%2 == 0:
-      raise RuntimeError("mean: window size k must be odd")
-    return _misc_filters.mean(self, k, border_treatment)
-  __call__ = staticmethod(__call__)
+    *k* is the window size (must be odd), and *border_treatment* can
+    be 0 ('padwhite'), which sets window pixels outside the image to white,
+    or 1 ('reflect'), for reflecting boundary conditions.
+    """
+    self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
+    args = Args([Int('k', default=3),
+                 Choice('border_treatment', ['padwhite', 'reflect'], default=1)])
+    doc_examples = [(GREYSCALE,)]
+    return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
+    author = "David Kolanus"
+
+    def __call__(self, k=3, border_treatment=1):
+        if k % 2 == 0:
+            raise RuntimeError("mean: window size k must be odd")
+        return _misc_filters.mean(self, k, border_treatment)
+    __call__ = staticmethod(__call__)
+
 
 class min_max_filter(PluginFunction):
     """
@@ -107,13 +115,15 @@ class min_max_filter(PluginFunction):
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT])
     author = "David Kolanus"
     doc_examples = [(GREYSCALE,)]
+
     def __call__(self, k=3, filter=0, k_vertical=0):
-        if k%2 == 0:
+        if k % 2 == 0:
             raise RuntimeError("min_max_filter: window size k must be odd")
-        if k_vertical != 0 and k_vertical%2 == 0:
+        if k_vertical != 0 and k_vertical % 2 == 0:
             raise RuntimeError("min_max_filter: k_vertical must be zero or odd")
         return _misc_filters.min_max_filter(self, k, filter, k_vertical)
     __call__ = staticmethod(__call__)
+
 
 class create_gabor_filter(PluginFunction):
     """
@@ -123,7 +133,7 @@ class create_gabor_filter(PluginFunction):
     The *orientation* is given in radians, the other parameters are
     the center *frequency* (for example 0.375 or smaller) and the two
     angular and radial sigmas of the gabor filter.
-    
+
     The energy of the filter is explicitly normalized to 1.0.
     """
     self_type = ImageType([GREYSCALE])
@@ -133,6 +143,7 @@ class create_gabor_filter(PluginFunction):
                  Int("direction", default=5)])
     author = u"Ullrich K\u00f6the (wrapped from VIGRA by Uma Kompella)"
     doc_examples = [(GREYSCALE,)]
+
     def __call__(self,
                  orientation=45.0,
                  frequency=0.375,
@@ -142,7 +153,7 @@ class create_gabor_filter(PluginFunction):
                                                  frequency,
                                                  direction)
     __call__ = staticmethod(__call__)
-    
+
 
 class kfill(PluginFunction):
     """
@@ -167,14 +178,16 @@ class kfill(PluginFunction):
     self_type = ImageType([ONEBIT])
     return_type = ImageType([ONEBIT])
     author = "Oliver Christen"
-    args = Args([Int("k", default=3),Int("iterations", default=1)])
+    args = Args([Int("k", default=3), Int("iterations", default=1)])
+
     def __call__(self, k=3, iterations=1):
-      if k < 3:
-        raise RuntimeError("kfill: k must be >= 3")
-      if iterations < 1:
-        raise RuntimeError("kfill: number of iterations must be > 0")
-      return _misc_filters.kfill(self, k, iterations)
+        if k < 3:
+            raise RuntimeError("kfill: k must be >= 3")
+        if iterations < 1:
+            raise RuntimeError("kfill: number of iterations must be > 0")
+        return _misc_filters.kfill(self, k, iterations)
     __call__ = staticmethod(__call__)
+
 
 class kfill_modified(PluginFunction):
     """
@@ -199,10 +212,11 @@ class kfill_modified(PluginFunction):
     return_type = ImageType([ONEBIT])
     author = "Oliver Christen"
     args = Args([Int("k", default=3)])
+
     def __call__(self, k=3):
-    		if k < 3:
-    			raise RuntimeError("k < 3")
-    		return _misc_filters.kfill_modified(self, k)
+        if k < 3:
+            raise RuntimeError("k < 3")
+        return _misc_filters.kfill_modified(self, k)
     __call__ = staticmethod(__call__)
 
 
