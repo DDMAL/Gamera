@@ -14,14 +14,18 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, Int, Check, Choice, Float
+from gamera.enums import ONEBIT, GREYSCALE, GREY16, FLOAT, RGB
+
 import _threshold
+
 
 class threshold(PluginFunction):
     """
@@ -42,9 +46,11 @@ class threshold(PluginFunction):
     args = Args([Int("threshold"), Choice("storage format", ['dense', 'rle'])])
     return_type = ImageType([ONEBIT], "output")
     doc_examples = [(GREYSCALE, 128)]
-    def __call__(image, threshold, storage_format = 0):
+
+    def __call__(image, threshold, storage_format=0):
         return _threshold.threshold(image, threshold, storage_format)
     __call__ = staticmethod(__call__)
+
 
 class otsu_find_threshold(PluginFunction):
     """
@@ -58,6 +64,7 @@ class otsu_find_threshold(PluginFunction):
     return_type = Int("threshold_point")
     doc_examples = [(GREYSCALE,)]
 
+
 class otsu_threshold(PluginFunction):
     """
     Creates a binary image by splitting along a threshold value
@@ -67,7 +74,7 @@ class otsu_threshold(PluginFunction):
 
     *storage_format* (optional)
       specifies the compression type for the result:
-      
+
       DENSE (0)
         no compression
       RLE (1)
@@ -77,9 +84,11 @@ class otsu_threshold(PluginFunction):
     args = Args(Choice("storage format", ['dense', 'rle']))
     return_type = ImageType([ONEBIT], "output")
     doc_examples = [(GREYSCALE,)]
-    def __call__(image, storage_format = 0):
+
+    def __call__(image, storage_format=0):
         return _threshold.otsu_threshold(image, storage_format)
     __call__ = staticmethod(__call__)
+
 
 class tsai_moment_preserving_find_threshold(PluginFunction):
     """
@@ -94,6 +103,7 @@ class tsai_moment_preserving_find_threshold(PluginFunction):
     return_type = Int("threshold_point")
     doc_examples = [(GREYSCALE,)]
     author = "Uma Kompella"
+
 
 class tsai_moment_preserving_threshold(PluginFunction):
     """
@@ -116,11 +126,10 @@ class tsai_moment_preserving_threshold(PluginFunction):
     return_type = ImageType([ONEBIT], "output")
     doc_examples = [(GREYSCALE,)]
     author = "Uma Kompella"
-    def __call__(image, storage_format = 0):
+
+    def __call__(image, storage_format=0):
         return _threshold.tsai_moment_preserving_threshold(image, storage_format)
     __call__ = staticmethod(__call__)
-
-
 
 
 class abutaleb_threshold(PluginFunction):
@@ -140,9 +149,11 @@ class abutaleb_threshold(PluginFunction):
     args = Args(Choice("storage format", ['dense', 'rle']))
     return_type = ImageType([ONEBIT], "output")
     doc_examples = [(GREYSCALE,)]
-    def __call__(image, storage_format = 0):
+
+    def __call__(image, storage_format=0):
         return _threshold.abutaleb_threshold(image, storage_format)
     __call__ = staticmethod(__call__)
+
 
 class bernsen_threshold(PluginFunction):
     """
@@ -153,7 +164,7 @@ class bernsen_threshold(PluginFunction):
     between maximum and minimum is below *contrast_limit* the pixel is set
     to black in case of *doubt_to_black* = ``True``, otherwise to white.
 
-    Reference: J. Bernsen: *Dynamic thresholding of grey-level images.* 
+    Reference: J. Bernsen: *Dynamic thresholding of grey-level images.*
     Proc. 8th International Conference on Pattern Recognition (ICPR8),
     pp. 1251-1255, 1986.
 
@@ -181,10 +192,12 @@ class bernsen_threshold(PluginFunction):
                  Check("doubt_to_black", default=False)])
     return_type = ImageType([ONEBIT], "output")
     doc_examples = [(GREYSCALE,)]
-    def __call__(image, storage_format = 0, region_size = 11,
-                 contrast_limit = 80, doubt_to_black = False):
+
+    def __call__(image, storage_format=0, region_size=11,
+                 contrast_limit=80, doubt_to_black=False):
         return _threshold.bernsen_threshold(image, storage_format, region_size, contrast_limit, doubt_to_black)
     __call__ = staticmethod(__call__)
+
 
 class djvu_threshold(PluginFunction):
     """
@@ -227,12 +240,14 @@ class djvu_threshold(PluginFunction):
                  Int("min_block_size", default=64),
                  Int("block_factor", default=2, range=(1, 8))])
     return_type = ImageType([ONEBIT], "output")
+
     def __call__(image, smoothness=0.2, max_block_size=512, min_block_size=64,
                  block_factor=2):
         return _threshold.djvu_threshold(image, smoothness, max_block_size,
                                          min_block_size, block_factor)
     __call__ = staticmethod(__call__)
     doc_examples = [(RGB, 0.5, 512, 64, 2)]
+
 
 class ThresholdModule(PluginModule):
     """
