@@ -12,14 +12,18 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
-import image_utilities, _image_conversion
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType
+from gamera.enums import ONEBIT, GREY16, GREYSCALE, COMPLEX, FLOAT, RGB, DENSE
+
+import _image_conversion
+
 
 class to_rgb(PluginFunction):
     """
@@ -40,6 +44,7 @@ class to_rgb(PluginFunction):
             return self.image_copy()
         return _image_conversion.to_rgb(self)
     __call__ = staticmethod(__call__)
+
 
 class to_greyscale(PluginFunction):
     """
@@ -64,6 +69,7 @@ class to_greyscale(PluginFunction):
         return _image_conversion.to_greyscale(self)
     __call__ = staticmethod(__call__)
 
+
 class to_grey16(PluginFunction):
     """
     Converts the given image to a GREY16 image according to the
@@ -86,6 +92,7 @@ class to_grey16(PluginFunction):
         return _image_conversion.to_grey16(self)
     __call__ = staticmethod(__call__)
 
+
 class to_float(PluginFunction):
     """
     Converts the given image to a FLOAT image according to the following
@@ -106,6 +113,7 @@ class to_float(PluginFunction):
         return _image_conversion.to_float(self)
     __call__ = staticmethod(__call__)
 
+
 class to_complex(PluginFunction):
     """
     Converts the given image to a COMPLEX image.
@@ -121,6 +129,7 @@ class to_complex(PluginFunction):
         return _image_conversion.to_complex(self)
     __call__ = staticmethod(__call__)
 
+
 class to_onebit(PluginFunction):
     """
     Converts the given image to a ONEBIT image. First the image is converted
@@ -135,6 +144,7 @@ class to_onebit(PluginFunction):
     pure_python = True
     self_type = ImageType([FLOAT, GREYSCALE, GREY16, RGB, COMPLEX])
     return_type = ImageType([ONEBIT], "onebit")
+
     def __call__(self, storage_format=DENSE):
         if self.data.pixel_type == ONEBIT:
             return self.image_copy()
@@ -145,6 +155,7 @@ class to_onebit(PluginFunction):
     doc_examples = [(RGB,), (GREYSCALE,)]
 to_onebit = to_onebit
 
+
 class extract_real(PluginFunction):
     """
     Returns a Float image containing only the real values in the given
@@ -152,6 +163,7 @@ class extract_real(PluginFunction):
     """
     self_type = ImageType([COMPLEX])
     return_type = ImageType([FLOAT], "float")
+
 
 class extract_imaginary(PluginFunction):
     """
@@ -161,9 +173,10 @@ class extract_imaginary(PluginFunction):
     self_type = ImageType([COMPLEX])
     return_type = ImageType([FLOAT], "float")
 
+
 class ImageConversionModule(PluginModule):
     category = "Conversion"
-    cpp_headers=["image_conversion.hpp"]
+    cpp_headers = ["image_conversion.hpp"]
     functions = [to_rgb, to_greyscale, to_grey16, to_float,
                  to_onebit, to_onebit, to_complex, extract_real,
                  extract_imaginary]
@@ -171,4 +184,3 @@ class ImageConversionModule(PluginModule):
     url = "http://gamera.sourceforge.net/"
 
 module = ImageConversionModule()
-
