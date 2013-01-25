@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -18,8 +18,11 @@
 
 """This module contains miscellanous free functions that are no image methods, but are used at different places in the gamera core."""
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import Class
+
 import _misc_free_functions
+
 
 class range_of_float(PluginFunction):
     """Returns a tuple ``(float_min, float_max)`` containing the range
@@ -34,16 +37,18 @@ implementation for backward compatibility.
     self_type = None
     return_type = Class("min_max")
     author = "Christoph Dalitz"
+
     def __call__():
         return _misc_free_functions.range_of_float()
     __call__ = staticmethod(__call__)
 
+
 class MiscFreeFunctionsModule(PluginModule):
-   category = None
-   cpp_headers=["misc_free_functions.hpp"]
-   functions = [range_of_float]
-   author = "Christoph Dalitz"
-   url = "http://gamera.sourceforge.net/"
+    category = None
+    cpp_headers = ["misc_free_functions.hpp"]
+    functions = [range_of_float]
+    author = "Christoph Dalitz"
+    url = "http://gamera.sourceforge.net/"
 module = MiscFreeFunctionsModule()
 
 range_of_float = range_of_float()
