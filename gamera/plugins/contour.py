@@ -12,94 +12,102 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
-
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, FloatVector, PointVector, Int
+from gamera.enums import ONEBIT
 import _contour
 
 #TODO: Change these to out-of-place
 
+
 class Contour(PluginFunction):
-  self_type = ImageType([ONEBIT])
-  return_type = FloatVector("contour")
-  doc_examples = [(ONEBIT,)]
+    self_type = ImageType([ONEBIT])
+    return_type = FloatVector("contour")
+    doc_examples = [(ONEBIT,)]
+
 
 class contour_top(Contour):
-  """
-  Returns a float vector containing the contour at the top of the
-  image.
+    """
+    Returns a float vector containing the contour at the top of the
+    image.
 
-  If there are no black pixels in a given column, the value is set to
-  inf.
-  """
-  pass
+    If there are no black pixels in a given column, the value is set to
+    inf.
+    """
+    pass
+
 
 class contour_bottom(Contour):
-  """
-  Returns a float vector containing the contour at the bottom of the
-  image.
+    """
+    Returns a float vector containing the contour at the bottom of the
+    image.
 
-  If there are no black pixels in a given column, the value is set to
-  inf.
-  """
-  pass
+    If there are no black pixels in a given column, the value is set to
+    inf.
+    """
+    pass
+
 
 class contour_left(Contour):
-  """
-  Returns a float vector containing the contour at the left of the
-  image.
+    """
+    Returns a float vector containing the contour at the left of the
+    image.
 
-  If there are no black pixels in a given row, the value is set to
-  inf.
-  """
-  pass
+    If there are no black pixels in a given row, the value is set to
+    inf.
+    """
+    pass
+
 
 class contour_right(Contour):
-  """
-  Returns a float vector containing the contour at the right of the
-  image.
+    """
+    Returns a float vector containing the contour at the right of the
+    image.
 
-  If there are no black pixels in a given row, the value is set to
-  inf.
-  """
-  pass
+    If there are no black pixels in a given row, the value is set to
+    inf.
+    """
+    pass
+
 
 class contour_samplepoints(PluginFunction):
-  """
-  Returns a point vector containing contour points of the given image.
-  
-  *percentage*:
-    return percentage of contour points. The points are selected approximately
-    equidistant on the countour.
-  
-  In addition to the points determined by the percentage argument the result
-  list also contains the four extreme points (topmost, leftmost, bottommost,
-  rightmost).
-  
-  .. code:: Python
-   
-   	ccs = image.cc_analysis()
-   	points = []
-   	for cc in ccs:
-   	  for samplepoint in cc.contour_samplepoints(50):
-   	    points.append(samplepoint)
-  """
-  self_type = ImageType([ONEBIT])
-  author = "Oliver Christen"
-  args = Args([Int("percentage", range=(1,100), default=25)])
-  return_type = PointVector("contourpoints")
-  doc_examples = [(ONEBIT, 10)]
-  
-  def __call__(self, percentage=25): 	
-    if percentage < 1 or percentage > 100:
-      raise RuntimeError("contour_samplepoints: percentage must be between 1 and 100")
-    return _contour.contour_samplepoints(self, percentage)
-  __call__ = staticmethod(__call__)
+    """
+    Returns a point vector containing contour points of the given image.
+
+    *percentage*:
+      return percentage of contour points. The points are selected approximately
+      equidistant on the countour.
+
+    In addition to the points determined by the percentage argument the result
+    list also contains the four extreme points (topmost, leftmost, bottommost,
+    rightmost).
+
+    .. code:: Python
+
+          ccs = image.cc_analysis()
+          points = []
+          for cc in ccs:
+            for samplepoint in cc.contour_samplepoints(50):
+              points.append(samplepoint)
+    """
+    self_type = ImageType([ONEBIT])
+    author = "Oliver Christen"
+    args = Args([Int("percentage", range=(1, 100), default=25)])
+    return_type = PointVector("contourpoints")
+    doc_examples = [(ONEBIT, 10)]
+
+    def __call__(self, percentage=25):
+        if percentage < 1 or percentage > 100:
+            raise RuntimeError("contour_samplepoints: percentage must be between 1 and 100")
+        return _contour.contour_samplepoints(self, percentage)
+    __call__ = staticmethod(__call__)
+
 
 class contour_pavlidis(PluginFunction):
     """
@@ -125,12 +133,13 @@ class contour_pavlidis(PluginFunction):
     return_type = PointVector("contour")
     author = "Andreas Leuschner"
 
+
 class ContourModule(PluginModule):
-  cpp_headers = ["contour.hpp"]
-  category = "Analysis/Contour"
-  functions = [contour_top, contour_left, contour_bottom, contour_right,
-               contour_samplepoints, contour_pavlidis]
-  author = "Michael Droettboom"
-  url = "http://gamera.sourceforge.net/"
+    cpp_headers = ["contour.hpp"]
+    category = "Analysis/Contour"
+    functions = [contour_top, contour_left, contour_bottom, contour_right,
+                 contour_samplepoints, contour_pavlidis]
+    author = "Michael Droettboom"
+    url = "http://gamera.sourceforge.net/"
 
 module = ContourModule()
