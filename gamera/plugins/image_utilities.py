@@ -21,12 +21,14 @@
 """The image utilities module contains plugins that do not fit in
 any other category, like image copying or computing histograms."""
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, ImageList, Pixel, Args, Class, Rect, Float
+from gamera.args import Choice, NoneDefault, FileSave, FloatVector, Int
+from gamera.enums import RGB, FLOAT, GREYSCALE, GREY16, ONEBIT, ALL
+
 from gamera.gui import has_gui
-from gamera.util import warn_deprecated
-from gamera.args import NoneDefault
-import sys
 import _image_utilities
+
 
 class image_copy(PluginFunction):
     """
@@ -45,11 +47,13 @@ class image_copy(PluginFunction):
     self_type = ImageType(ALL)
     return_type = ImageType(ALL)
     args = Args([Choice("storage_format", ["DENSE", "RLE"])])
-    def __call__(image, storage_format = 0):
+
+    def __call__(image, storage_format=0):
         if image.nrows <= 0 or image.ncols <= 0:
             return image
         return _image_utilities.image_copy(image, storage_format)
     __call__ = staticmethod(__call__)
+
 
 class image_save(PluginFunction):
     """
@@ -61,6 +65,7 @@ class image_save(PluginFunction):
     args = Args([FileSave("image_file_name", "", "*"),
                  Choice("File format", ["TIFF", "PNG"])
                  ])
+
     def __call__(image, name, format):
         if format == 0 or str(format).upper() == "TIFF":
             try:
@@ -76,6 +81,7 @@ class image_save(PluginFunction):
             image.save_PNG(name)
     __call__ = staticmethod(__call__)
 
+
 class histogram(PluginFunction):
     """
     Compute the histogram of the pixel values in the given image.
@@ -90,12 +96,14 @@ class histogram(PluginFunction):
     self_type = ImageType([GREYSCALE, GREY16])
     return_type = FloatVector()
     doc_examples = [(GREYSCALE,)]
+
     def __call__(image):
         hist = _image_utilities.histogram(image)
         if has_gui.has_gui == has_gui.WX_GUI:
             has_gui.gui.ShowHistogram(hist, mark=image.otsu_find_threshold())
         return hist
     __call__ = staticmethod(__call__)
+
 
 class union_images(PluginFunction):
     """
@@ -107,12 +115,14 @@ class union_images(PluginFunction):
     args = Args([ImageList('list_of_images')])
     return_type = ImageType([ONEBIT])
 
+
 class fill_white(PluginFunction):
     """
     Fills the entire image with white.
     """
     category = "Draw"
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
+
 
 class fill(PluginFunction):
     """
@@ -125,6 +135,7 @@ class fill(PluginFunction):
     self_type = ImageType(ALL)
     args = Args([Pixel("value")])
 
+
 class pad_image_default(PluginFunction):
     """Pads an image with the default pixel value white"""
     # This is only for plugin generation, it will not be added to the image type
@@ -134,9 +145,10 @@ class pad_image_default(PluginFunction):
     args = Args([ImageType(ALL), Int("top"), Int("right"), Int("bottom"), Int("left")])
     return_type = ImageType(ALL)
 
+
 class pad_image(PluginFunction):
     """
-    Pads an image with any value. When no pixel value is given, the value 
+    Pads an image with any value. When no pixel value is given, the value
     corresponding to the color *white* is used.
 
     *top*
@@ -161,6 +173,7 @@ class pad_image(PluginFunction):
     args = Args([Int("top"), Int("right"), Int("bottom"), Int("left"), Pixel("value")])
     return_type = ImageType(ALL)
     _pad_image_default = pad_image_default()
+
     def __call__(self, top, right, bottom, left, value=None):
         if value is None:
             return pad_image._pad_image_default(self, top, right, bottom, left)
@@ -168,6 +181,7 @@ class pad_image(PluginFunction):
             return _image_utilities.pad_image(self, top, right, bottom, left, value)
     __call__ = staticmethod(__call__)
     doc_examples = [(RGB, 5, 10, 15, 20)]
+
 
 class trim_image(PluginFunction):
     """
@@ -179,11 +193,13 @@ class trim_image(PluginFunction):
     args = Args([Pixel("PixelValue", default=NoneDefault)])
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, FLOAT, RGB])
     author = "Tobias Bolten"
+
     def __call__(self, PixelValue=None):
         if (PixelValue == None):
             PixelValue = self.white()
         return _image_utilities.trim_image(self, PixelValue)
     __call__ = staticmethod(__call__)
+
 
 class invert(PluginFunction):
     """
@@ -192,6 +208,7 @@ class invert(PluginFunction):
     category = "Draw"
     self_type = ImageType([ONEBIT, GREYSCALE, GREY16, RGB])
     doc_examples = [(RGB,), (GREYSCALE,), (ONEBIT,)]
+
 
 class clip_image(PluginFunction):
     """
@@ -203,6 +220,7 @@ class clip_image(PluginFunction):
     return_type = ImageType(ALL)
     self_type = ImageType(ALL)
     args = Args(Rect("other"))
+
 
 class mask(PluginFunction):
     """
@@ -216,6 +234,7 @@ class mask(PluginFunction):
     return_type = ImageType([GREYSCALE, RGB])
     self_type = ImageType([GREYSCALE, RGB])
     args = Args(ImageType([ONEBIT], "mask"))
+
 
 class to_nested_list(PluginFunction):
     """
@@ -239,15 +258,16 @@ class to_nested_list(PluginFunction):
     return_type = Class("nested_list")
     doc_examples = [(ONEBIT,)]
 
+
 class nested_list_to_image(PluginFunction):
     """
     Converts a nested Python list to an Image.  Is the inverse of
     ``to_nested_list``.
-    
+
     *nested_list*
       A nested Python list in row-major order.  If the list is a flat list,
       an image with a single row will be created.
-  
+
     *image_type*
       The resulting image type.  Should be one of the integer Image type
       constants (ONEBIT, GREYSCALE, GREY16, RGB, FLOAT).  If image_type
@@ -285,9 +305,11 @@ class nested_list_to_image(PluginFunction):
                  Choice('image_type', ['ONEBIT', 'GREYSCALE',
                                        'GREY16', 'RGB', 'FLOAT'])])
     return_type = ImageType(ALL)
+
     def __call__(l, t=-1):
         return _image_utilities.nested_list_to_image(l, t)
     __call__ = staticmethod(__call__)
+
 
 class diff_images(PluginFunction):
     """
@@ -303,6 +325,7 @@ class diff_images(PluginFunction):
     args = Args([ImageType(ONEBIT, 'other')])
     return_type = ImageType(RGB)
     pure_python = True
+
     def __call__(self, other):
         from gamera.core import RGBPixel
         result = self.to_rgb()
@@ -313,6 +336,7 @@ class diff_images(PluginFunction):
         return result
     __call__ = staticmethod(__call__)
 
+
 class mse(PluginFunction):
     """
     Calculates the mean square error between two images.
@@ -322,15 +346,17 @@ class mse(PluginFunction):
     args = Args([ImageType([RGB])])
     return_type = Float()
 
+
 class reset_onebit_image(PluginFunction):
     """
     Resets all black pixel values in a onebit image to one.  This
     can be necessary e.g. after a CC analysis which sets black
     pixels to some other label value.
     """
-    category="Utility"
+    category = "Utility"
     self_type = ImageType([ONEBIT])
     author = "Christoph Dalitz"
+
 
 class ccs_from_labeled_image(PluginFunction):
     """
@@ -353,6 +379,7 @@ class ccs_from_labeled_image(PluginFunction):
     return_type = ImageList("ccs")
     author = "Christoph Dalitz and Hasan Yildiz"
 
+
 class min_max_location(PluginFunction):
     """Returns the minimum and maximum pixel value and their location
 in an image. When the min/max value occurs at several locations, only the
@@ -374,12 +401,13 @@ The return value is a tuple of the form *(pmin, vmin, pmax, vmax)* where
 *pmin* and *pmax* are the point of the minimum and maximimum, respectively,
 and *vmin* and *vmax* the corresponding pixel values.
 """
-    category="Analysis"
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    category = "Analysis"
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
     return_type = Class("min_max_loc")
     args = Args([ImageType([ONEBIT], name='mask', default=NoneDefault)])
     author = "Christoph Dalitz"
     doc_examples = [(GREYSCALE,)]
+
     def __call__(self, mask=None):
         if mask is None:
             return _image_utilities.min_max_location_nomask(self)
@@ -387,23 +415,25 @@ and *vmin* and *vmax* the corresponding pixel values.
             return _image_utilities.min_max_location(self, mask)
     __call__ = staticmethod(__call__)
 
+
 class min_max_location_nomask(PluginFunction):
     """This is only a helper function for overloading min_max_location.
 It is not needed on the Python side, but only on the C++ side due to
 the plugin wrapping mechanism of Gamera.
 """
     category = None
-    self_type = ImageType([GREYSCALE,GREY16,FLOAT])
+    self_type = ImageType([GREYSCALE, GREY16, FLOAT])
     return_type = Class("min_max_loc")
     author = "Christoph Dalitz"
 
+
 class UtilModule(PluginModule):
-    cpp_headers=["image_utilities.hpp"]
+    cpp_headers = ["image_utilities.hpp"]
     category = None
     functions = [image_save, image_copy,
                  histogram, union_images,
                  fill_white, fill, pad_image, pad_image_default, trim_image,
-		 invert, clip_image, mask,
+                 invert, clip_image, mask,
                  nested_list_to_image, to_nested_list,
                  diff_images, mse, reset_onebit_image,
                  ccs_from_labeled_image,
