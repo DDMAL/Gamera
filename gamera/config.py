@@ -19,24 +19,25 @@ Copyright (C) 2001-2005 Michael Droettboom
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from backport.config import *
+import backport.config
 from gamera import __version__
 
 from inspect import getfile
 from os.path import split, join, expanduser
 
-class GameraConfigOptionParser(ConfigOptionParser):
-   extra_files = []
 
-   def add_file(self, file):
-      self.extra_files.append(file)
+class GameraConfigOptionParser(backport.config.ConfigOptionParser):
+    extra_files = []
 
-   def get_config_files(self):
-      dir = split(getfile(GameraConfigOptionParser))[0]
-      return ([join(dir, "gamera.cfg"), join(expanduser("~"), ".gamera")] +
-              self.extra_files)
+    def add_file(self, file):
+        self.extra_files.append(file)
 
-config = GameraConfigOptionParser(usage = "%prog [options] [script [script_args]]", version = __version__)
+    def get_config_files(self):
+        dir = split(getfile(GameraConfigOptionParser))[0]
+        return ([join(dir, "gamera.cfg"), join(expanduser("~"), ".gamera")] +
+                self.extra_files)
+
+config = GameraConfigOptionParser(usage="%prog [options] [script [script_args]]", version=__version__)
 config.disable_interspersed_args()
 
 
