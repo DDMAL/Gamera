@@ -10,13 +10,16 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, ImageList, FloatVector, Float, Int
+from gamera.enums import ONEBIT
+
 from gamera import util
 import _segmentation
 
@@ -25,6 +28,7 @@ class Segmenter(PluginFunction):
     self_type = ImageType([ONEBIT])
     return_type = ImageList("ccs")
     doc_examples = [(ONEBIT,)]
+
 
 class cc_analysis(Segmenter):
     """
@@ -59,14 +63,16 @@ class cc_and_cluster(Segmenter):
     TODO: We need some more detailed documentation here.
     """
     pure_python = True
-    args = Args([Float('ratio', default = 1.0), Int('distance', default=2)])
+    args = Args([Float('ratio', default=1.0), Int('distance', default=2)])
     return_type = ImageList("ccs")
-    def __call__(image, ratio = 1.0, distance = 2):
+
+    def __call__(image, ratio=1.0, distance=2):
         from gamera import cluster
         cc = image.cc_analysis()
         return cluster.cluster(cc, ratio, distance)
     __call__ = staticmethod(__call__)
     doc_examples = [(ONEBIT,)]
+
 
 class splitx(Segmenter):
     """
@@ -80,13 +86,15 @@ class splitx(Segmenter):
     """
     args = Args([FloatVector("center", default=[0.5])])
     doc_examples = [(ONEBIT,)]
+
     def __call__(self, center=0.5):
-       if not util.is_sequence(center):
-          return _segmentation.splitx(self, [center])
-       else:
-          return _segmentation.splitx(self, center)
+        if not util.is_sequence(center):
+            return _segmentation.splitx(self, [center])
+        else:
+            return _segmentation.splitx(self, center)
     __call__ = staticmethod(__call__)
     author = "Michael Droettboom, Karl MacMillan and Christoph Dalitz"
+
 
 class splitx_max(Segmenter):
     """Splits an image vertically.
@@ -98,13 +106,15 @@ class splitx_max(Segmenter):
     list of splitting point canidates as input.
     """
     args = Args([FloatVector("center", default=[0.5])])
+
     def __call__(self, center=0.5):
-       if not util.is_sequence(center):
-          return _segmentation.splitx_max(self, [center])
-       else:
-          return _segmentation.splitx_max(self, center)
+        if not util.is_sequence(center):
+            return _segmentation.splitx_max(self, [center])
+        else:
+            return _segmentation.splitx_max(self, center)
     __call__ = staticmethod(__call__)
     author = "Michael Droettboom, Karl MacMillan and Christoph Dalitz"
+
 
 class splity(Segmenter):
     """
@@ -117,18 +127,21 @@ class splity(Segmenter):
     list of splitting point canidates as input.
     """
     args = Args([FloatVector("center", default=[0.5])])
+
     def __call__(self, center=[0.5]):
-       if not util.is_sequence(center):
-          return _segmentation.splity(self, [center])
-       else:
-          return _segmentation.splity(self, center)
+        if not util.is_sequence(center):
+            return _segmentation.splity(self, [center])
+        else:
+            return _segmentation.splity(self, center)
     __call__ = staticmethod(__call__)
     author = "Michael Droettboom, Karl MacMillan and Christoph Dalitz"
+
 
 class splitx_base(Segmenter):
     pure_python = True
     return_type = ImageList("splits")
-    
+
+
 class splitx_left(splitx_base):
     """
     Splits an image vertically.
@@ -137,9 +150,11 @@ class splitx_left(splitx_base):
     the projections near the left of the image.
     """
     _center = 0.25
+
     def __call__(self):
         return self.splitx(0.25)
     __call__ = staticmethod(__call__)
+
 
 class splitx_right(splitx_base):
     """
@@ -149,14 +164,17 @@ class splitx_right(splitx_base):
     the projections near the right of the image.
     """
     _center = 0.75
+
     def __call__(self):
         return self.splitx(0.75)
     __call__ = staticmethod(__call__)
 
+
 class splity_base(Segmenter):
     pure_python = True
     return_type = ImageList("splits")
-    
+
+
 class splity_top(splity_base):
     """
     Splits an image horizontally.
@@ -165,9 +183,11 @@ class splity_top(splity_base):
     the projections near the top of the image.
     """
     _center = 0.25
+
     def __call__(self):
         return self.splity(0.25)
     __call__ = staticmethod(__call__)
+
 
 class splity_bottom(splity_base):
     """
@@ -177,12 +197,13 @@ class splity_bottom(splity_base):
     the projections near the bottom of the image.
     """
     _center = 0.75
+
     def __call__(self):
         return self.splity(0.75)
     __call__ = staticmethod(__call__)
 
-# connected-component filters
 
+# connected-component filters
 def filter_wide(ccs, max_width):
     tmp = []
     for x in ccs:
@@ -191,6 +212,7 @@ def filter_wide(ccs, max_width):
         else:
             tmp.append(x)
     return tmp
+
 
 def filter_narrow(ccs, min_width):
     tmp = []
@@ -201,6 +223,7 @@ def filter_narrow(ccs, min_width):
             tmp.append(x)
     return tmp
 
+
 def filter_tall(ccs, max_height):
     tmp = []
     for x in ccs:
@@ -209,6 +232,7 @@ def filter_tall(ccs, max_height):
         else:
             tmp.append(x)
     return tmp
+
 
 def filter_short(ccs, min_height):
     tmp = []
@@ -219,6 +243,7 @@ def filter_short(ccs, min_height):
             tmp.append(x)
     return tmp
 
+
 def filter_small(ccs, min_size):
     tmp = []
     for x in ccs:
@@ -227,6 +252,7 @@ def filter_small(ccs, min_size):
         else:
             tmp.append(x)
     return tmp
+
 
 def filter_large(ccs, max_size):
     tmp = []
@@ -237,6 +263,7 @@ def filter_large(ccs, max_size):
             tmp.append(x)
     return tmp
 
+
 def filter_black_area_small(ccs, min_size):
     tmp = []
     for x in ccs:
@@ -245,6 +272,7 @@ def filter_black_area_small(ccs, min_size):
         else:
             tmp.append(x)
     return tmp
+
 
 def filter_black_area_large(ccs, max_size):
     tmp = []
@@ -255,9 +283,10 @@ def filter_black_area_large(ccs, max_size):
             tmp.append(x)
     return tmp
 
+
 class SegmentationModule(PluginModule):
     category = "Segmentation"
-    cpp_headers=["segmentation.hpp"]
+    cpp_headers = ["segmentation.hpp"]
     functions = [cc_analysis, cc_and_cluster, splitx, splity,
                  splitx_left, splitx_right, splity_top, splity_bottom,
                  splitx_max]
