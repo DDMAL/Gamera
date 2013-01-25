@@ -265,6 +265,7 @@ template = Template("""
   }
   """)
 
+
 def generate_plugin(plugin_filename, location, compiling_gamera,
                     extra_compile_args=[], extra_link_args=[], libraries=[],
                     define_macros=[]):
@@ -295,11 +296,9 @@ def generate_plugin(plugin_filename, location, compiling_gamera,
         include_dirs.extend(gamera_setup.get_gamera_include_dirs())
     if not regenerate:
         for header in plugin_module.module.cpp_headers:
-            found_header = 0
             for include_dir in include_dirs:
                 header_filename = path.join(include_dir, header)
                 if path.exists(header_filename):
-                    found_header = 1
                     if newer(header_filename, cpp_filename):
                         regenerate = True
                         break
