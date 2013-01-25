@@ -260,8 +260,8 @@ class ImageType(Arg):
         return result
 
     def register(self, plug, func):
-        from gamera import core
-        func = instancemethod(func, None, core.gameracore.Image)
+        import core
+        func = instancemethod(func, None, core.Image)
         setattr(core.ImageBase, plug.__name__, func)
 
 
