@@ -39,37 +39,38 @@ global plugins_to_ignore
 # the loading of C++ modules that may not exist yet during
 # the build process.
 def magic_import(name, globals_={}, locals_={}, fromlist=[], level=-1):
-   if fromlist != None and "core" in fromlist:
-      fromlist = list(fromlist)
-      fromlist.remove("core")
+    if fromlist != None and "core" in fromlist:
+        fromlist = list(fromlist)
+        fromlist.remove("core")
 
-   for x in plugins_to_ignore:
-      if name == x:
-         return None
+    for x in plugins_to_ignore:
+        if name == x:
+            return None
 
-   if float(sys.version[0:3]) < 2.45:
-      return std_import(name, globals_, locals_, fromlist)
-   else:
-      return std_import(name, globals_, locals_, fromlist, level)
+    if float(sys.version[0:3]) < 2.45:
+        return std_import(name, globals_, locals_, fromlist)
+    else:
+        return std_import(name, globals_, locals_, fromlist, level)
 
 def magic_import_setup(ignore):
-   global plugins_to_ignore
-   global std_import
-   plugins_to_ignore = ignore
-   # Save the standard __import__ function so we can chain to it
-   std_import = __builtins__['__import__']
-   # Override the __import__ function with our new one
-   __builtins__['__import__'] = magic_import
+    global plugins_to_ignore
+    global std_import
+    plugins_to_ignore = ignore
+    # Save the standard __import__ function so we can chain to it
+    std_import = __builtins__['__import__']
+    # Override the __import__ function with our new one
+    __builtins__['__import__'] = magic_import
 
 def restore_import():
-   global std_import
-   __builtins__['__import__'] = std_import
+    global std_import
+    __builtins__['__import__'] = std_import
 
 template = Template("""
-  [[exec from os import path]]
-  [[exec from enums import *]]
-  [[exec from plugin import *]]
-  [[exec from util import get_pixel_type_name]]
+  [[exec import os]]
+  [[exec from gamera.enums import GREYSCALE, GREY16, RGB]]
+  [[exec from gamera.plugin import PluginFunction, PluginModule]]
+  [[exec from gamera.args import ImageType, Class, Real]]
+  [[exec from gamera.util import get_pixel_type_name]]
 
   [[# This should be included first in order to avoid libpng.h/setjmp.h problems. #]]
   [[if module.__class__.__name__ == "PngSupportModule"]]
@@ -97,7 +98,7 @@ template = Template("""
 
   [[# Generate the plugin path and module name from the filename. #]]
   [[# The module name for our purposes will be prefixed with an underscore #]]
-  [[exec plug_path, filename = path.split(__file__)]]
+  [[exec plug_path, filename = os.path.split(__file__)]]
   [[exec module_name = '_' + filename.split('.')[0] ]]
 
   [[# Declare all of the functions - because this is a C++ file we have to #]]
@@ -267,67 +268,66 @@ template = Template("""
 def generate_plugin(plugin_filename, location, compiling_gamera,
                     extra_compile_args=[], extra_link_args=[], libraries=[],
                     define_macros=[]):
-  from gamera import gamera_setup
+    from gamera import gamera_setup
 
-  plug_path, filename = path.split(plugin_filename)
-  module_name = filename.split('.')[0]
-  cpp_filename = path.join(plug_path, "_" + module_name + ".cpp")
+    plug_path, filename = path.split(plugin_filename)
+    module_name = filename.split('.')[0]
+    cpp_filename = path.join(plug_path, "_" + module_name + ".cpp")
 
-  regenerate = False
-  if newer(plugin_filename, cpp_filename) or '-f' in sys.argv:
-    regenerate = True
+    regenerate = False
+    if newer(plugin_filename, cpp_filename) or '-f' in sys.argv:
+        regenerate = True
 
-  sys.path.append(plug_path)
+    sys.path.append(plug_path)
 
-  #import plugin
-  plugin_module = __import__(module_name)
-  if not hasattr(plugin_module, 'module'):
-     return None
-  if plugin_module.module.pure_python:
-     return None
+    #import plugin
+    plugin_module = __import__(module_name)
+    if not hasattr(plugin_module, 'module'):
+        return None
+    if plugin_module.module.pure_python:
+        return None
 
-  # see if any of the header files have changed since last time
-  # we compiled
-  include_dirs = (["include", plug_path, "include/plugins"] +
-                  plugin_module.module.cpp_include_dirs)
-  if not compiling_gamera:
-     include_dirs.extend(gamera_setup.get_gamera_include_dirs())
-  if not regenerate:
-    for header in plugin_module.module.cpp_headers:
-      found_header = 0
-      for include_dir in include_dirs:
-        header_filename = path.join(include_dir, header)
-        if path.exists(header_filename):
-          found_header = 1
-          if newer(header_filename, cpp_filename):
-            regenerate = True
-            break
-          break
-      if regenerate:
-        break
+    # see if any of the header files have changed since last time
+    # we compiled
+    include_dirs = (["include", plug_path, "include/plugins"] +
+                    plugin_module.module.cpp_include_dirs)
+    if not compiling_gamera:
+        include_dirs.extend(gamera_setup.get_gamera_include_dirs())
+    if not regenerate:
+        for header in plugin_module.module.cpp_headers:
+            found_header = 0
+            for include_dir in include_dirs:
+                header_filename = path.join(include_dir, header)
+                if path.exists(header_filename):
+                    found_header = 1
+                    if newer(header_filename, cpp_filename):
+                        regenerate = True
+                        break
+                    break
+            if regenerate:
+                break
 
-  if regenerate:
-    print "generating wrappers for", module_name, "plugin"
-    template.execute_file(cpp_filename, plugin_module.__dict__)
-  else:
-    print "skipping wrapper generation for", module_name, "plugin (output up-to-date)"
+    if regenerate:
+        print "generating wrappers for", module_name, "plugin"
+        template.execute_file(cpp_filename, plugin_module.__dict__)
+    else:
+        print "skipping wrapper generation for", module_name, "plugin (output up-to-date)"
 
-  # make the a distutils extension class for this plugin
-  cpp_files = [cpp_filename]
-  for file in plugin_module.module.cpp_sources:
-    cpp_files.append(file)
+    # make the a distutils extension class for this plugin
+    cpp_files = [cpp_filename]
+    for file in plugin_module.module.cpp_sources:
+        cpp_files.append(file)
 
-  extra_libraries = plugin_module.module.extra_libraries
-  # This is to make up for a bug in distutils.
-  if '--compiler=mingw32' in sys.argv or not sys.platform == 'win32':
-     if "stdc++" not in extra_libraries:
-        extra_libraries.append("stdc++")
-  return Extension(location + "._" + module_name, cpp_files,
-                   include_dirs=include_dirs,
-                   library_dirs=plugin_module.module.library_dirs,
-                   libraries=extra_libraries,
-                   extra_compile_args=plugin_module.module.extra_compile_args + extra_compile_args,
-                   extra_link_args=plugin_module.module.extra_link_args + extra_link_args,
-                   define_macros=plugin_module.module.define_macros + define_macros,
-                   extra_objects=plugin_module.module.extra_objects)
-
+    extra_libraries = plugin_module.module.extra_libraries
+    # This is to make up for a bug in distutils.
+    if '--compiler=mingw32' in sys.argv or not sys.platform == 'win32':
+        if "stdc++" not in extra_libraries:
+            extra_libraries.append("stdc++")
+    return Extension(location + "._" + module_name, cpp_files,
+                     include_dirs=include_dirs,
+                     library_dirs=plugin_module.module.library_dirs,
+                     libraries=extra_libraries,
+                     extra_compile_args=plugin_module.module.extra_compile_args + extra_compile_args,
+                     extra_link_args=plugin_module.module.extra_link_args + extra_link_args,
+                     define_macros=plugin_module.module.define_macros + define_macros,
+                     extra_objects=plugin_module.module.extra_objects)
