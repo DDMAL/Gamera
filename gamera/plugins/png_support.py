@@ -28,8 +28,13 @@
 #
 # MS-Windows:
 #   We always use the local copy of libpng
+import os
+import sys
 
-from gamera.plugin import *
+from gamera.plugin import PluginFunction, PluginModule
+from gamera.args import ImageType, Args, String, Choice, ImageInfo, FileOpen, FileSave
+from gamera.enums import ONEBIT, GREY16, GREYSCALE, RGB, FLOAT, ALL
+
 
 class PNG_info(PluginFunction):
     """
@@ -41,6 +46,7 @@ class PNG_info(PluginFunction):
     self_type = None
     args = Args([String("image_file_name")])
     return_type = ImageInfo("PNG_info")
+
 
 class load_PNG(PluginFunction):
     """
@@ -61,11 +67,13 @@ class load_PNG(PluginFunction):
     args = Args([FileOpen("image_file_name", "", "*.png"),
                  Choice("storage format", ["DENSE", "RLE"])])
     return_type = ImageType([ONEBIT, GREYSCALE, GREY16, RGB, FLOAT])
-    def __call__(filename, compression = 0):
+
+    def __call__(filename, compression=0):
         from gamera.plugins import _png_support
         return _png_support.load_PNG(filename, compression)
     __call__ = staticmethod(__call__)
     exts = ['png']
+
 
 class save_PNG(PluginFunction):
     """
@@ -75,9 +83,8 @@ class save_PNG(PluginFunction):
     args = Args([FileSave("image_file_name", "image.png", "*.png")])
     exts = ['png']
 
+
 class PngSupportModule(PluginModule):
-    import sys
-    import os.path
     category = "File"
     cpp_headers = ["png_support.hpp"]
     internal_png_dir = "src/libpng-1.2.5/"
@@ -106,11 +113,11 @@ class PngSupportModule(PluginModule):
                        ['png.c', 'pngset.c', 'pngget.c', 'pngrutil.c',
                         'pngtrans.c', 'pngwutil.c', 'pngread.c', 'pngrio.c',
                         'pngwio.c', 'pngwrite.c', 'pngrtran.c', 'pngwtran.c',
-                        'pngmem.c', 'pngerror.c', 'pngpread.c',]]
+                        'pngmem.c', 'pngerror.c', 'pngpread.c']]
         cpp_sources.extend([os.path.join(internal_zlib_dir, x) for x in
-                            ['adler32.c','compress.c','crc32.c','deflate.c','gzio.c',
-                             'infback.c','inffast.c','inflate.c','inftrees.c','trees.c',
-                             'uncompr.c','zutil.c']])
+                            ['adler32.c', 'compress.c', 'crc32.c', 'deflate.c', 'gzio.c',
+                             'infback.c', 'inffast.c', 'inflate.c', 'inftrees.c', 'trees.c',
+                             'uncompr.c', 'zutil.c']])
         cpp_include_dirs = [internal_png_dir, "include/zlib-1.2.1"]
 #        extra_libraries = ["z"]
     else:
