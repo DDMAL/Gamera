@@ -19,18 +19,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from pyplate import *
-from os import path
 import os
 import sys
-import re
 from distutils.core import Extension
 from distutils.dep_util import newer
-from distutils import sysconfig
-from gamera import paths, args_wrappers
+from gamera import pyplate
 
 global std_import
 global plugins_to_ignore
+
 
 # magic_import and magic_import_setup
 #
@@ -39,6 +36,9 @@ global plugins_to_ignore
 # the loading of C++ modules that may not exist yet during
 # the build process.
 def magic_import(name, globals_={}, locals_={}, fromlist=[], level=-1):
+    global plugins_to_ignore
+    global std_import
+
     if fromlist != None and "core" in fromlist:
         fromlist = list(fromlist)
         fromlist.remove("core")
@@ -52,6 +52,7 @@ def magic_import(name, globals_={}, locals_={}, fromlist=[], level=-1):
     else:
         return std_import(name, globals_, locals_, fromlist, level)
 
+
 def magic_import_setup(ignore):
     global plugins_to_ignore
     global std_import
@@ -61,11 +62,13 @@ def magic_import_setup(ignore):
     # Override the __import__ function with our new one
     __builtins__['__import__'] = magic_import
 
+
 def restore_import():
     global std_import
     __builtins__['__import__'] = std_import
 
-template = Template("""
+
+template = pyplate.Template("""
   [[exec import os]]
   [[exec from gamera.enums import GREYSCALE, GREY16, RGB]]
   [[exec from gamera.plugin import PluginFunction, PluginModule]]
@@ -271,9 +274,9 @@ def generate_plugin(plugin_filename, location, compiling_gamera,
                     define_macros=[]):
     from gamera import gamera_setup
 
-    plug_path, filename = path.split(plugin_filename)
+    plug_path, filename = os.path.split(plugin_filename)
     module_name = filename.split('.')[0]
-    cpp_filename = path.join(plug_path, "_" + module_name + ".cpp")
+    cpp_filename = os.path.join(plug_path, "_" + module_name + ".cpp")
 
     regenerate = False
     if newer(plugin_filename, cpp_filename) or '-f' in sys.argv:
@@ -297,8 +300,8 @@ def generate_plugin(plugin_filename, location, compiling_gamera,
     if not regenerate:
         for header in plugin_module.module.cpp_headers:
             for include_dir in include_dirs:
-                header_filename = path.join(include_dir, header)
-                if path.exists(header_filename):
+                header_filename = os.path.join(include_dir, header)
+                if os.path.exists(header_filename):
                     if newer(header_filename, cpp_filename):
                         regenerate = True
                         break
