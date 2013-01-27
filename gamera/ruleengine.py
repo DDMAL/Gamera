@@ -13,7 +13,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -22,8 +22,8 @@
 import traceback
 from sys import exc_info
 from inspect import isfunction
-from gamera import group, util
-from fudge import Fudge
+from gamera import group
+from gamera import util
 
 """This module provides tools for applying graph-rewriting rules to a
 set of glyphs.
@@ -76,7 +76,7 @@ Rule functions take the basic form:
 
       Informal syntax definition:
          A|B                          # matches A or B
-         A.B|C                        # matches A.B or A.C 
+         A.B|C                        # matches A.B or A.C
          (A.B)|C                      # matches A.B or C
          *                            # multiple-character wildcard
          ?                            # single character wildcard
@@ -129,117 +129,119 @@ grid cells.  This will affect how far apart symbols can be matched.
 TODO: There may be at some point some kind of Meta-RuleEngine for
 performing sets of rules in sequence or parallel or whatever...  """
 
+
 class RuleEngineError(Exception):
-   pass
+    pass
+
 
 class RuleEngine:
-   _class_rules = []
+    _class_rules = []
 
-   def __init__(self, rules=[], reapply=0):
-      self.rules = {}
-      self._regexs = {}
-      self._rules_by_regex = {}
-      for rule in rules + self._class_rules:
-         if isfunction(rule):
-            self.add_rule(rule)
-         elif isinstance(rule, RuleEngine):
-            for r in rule.rules:
-               self.add_rule(r)
-      self._reapply = reapply
+    def __init__(self, rules=[], reapply=0):
+        self.rules = {}
+        self._regexs = {}
+        self._rules_by_regex = {}
+        for rule in rules + self._class_rules:
+            if isfunction(rule):
+                self.add_rule(rule)
+            elif isinstance(rule, RuleEngine):
+                for r in rule.rules:
+                    self.add_rule(r)
+        self._reapply = reapply
 
-   def add_rule(self, rule):
-      import id_name_matching
-      assert len(rule.func_defaults)
-      self.rules[rule] = None
-      regex = rule.func_defaults[0]
-      if not self._rules_by_regex.has_key(regex):
-         self._rules_by_regex[regex] = []
-      self._rules_by_regex[regex].append(rule)
-      for regex in rule.func_defaults:
-         if not self._regexs.has_key(regex):
-            self._regexs[regex] = id_name_matching.build_id_regex(regex)
-         if not self._rules_by_regex.has_key(regex):
+    def add_rule(self, rule):
+        import id_name_matching
+        assert len(rule.func_defaults)
+        self.rules[rule] = None
+        regex = rule.func_defaults[0]
+        if not self._rules_by_regex.has_key(regex):
             self._rules_by_regex[regex] = []
+        self._rules_by_regex[regex].append(rule)
+        for regex in rule.func_defaults:
+            if not self._regexs.has_key(regex):
+                self._regexs[regex] = id_name_matching.build_id_regex(regex)
+            if not self._rules_by_regex.has_key(regex):
+                self._rules_by_regex[regex] = []
 
-   def get_rules(self):
-      return self.rules.keys()
+    def get_rules(self):
+        return self.rules.keys()
 
-   def _deal_with_result(self, rule, glyphs, added, removed):
-      try:
-         current_stack = traceback.extract_stack()
-         result = rule(*glyphs)
-      except Exception, e:
-         lines = traceback.format_exception(*exc_info())
-         del lines[1]
-         exception = ''.join(lines)
-         # We build a dictionary of exceptions in order to remove duplicates
-         self._exceptions.append(exception)
-         return 0
-      if result is None or result == ([], []):
-         return 0
-      for a in result[0]:
-         added[a] = None
-      for a in result[1]:
-         removed[a] = None
-      return 1
+    def _deal_with_result(self, rule, glyphs, added, removed):
+        try:
+            current_stack = traceback.extract_stack()
+            result = rule(*glyphs)
+        except Exception:
+            lines = traceback.format_exception(*exc_info())
+            del lines[1]
+            exception = ''.join(lines)
+            # We build a dictionary of exceptions in order to remove duplicates
+            self._exceptions.append(exception)
+            return 0
+        if result is None or result == ([], []):
+            return 0
+        for a in result[0]:
+            added[a] = None
+        for a in result[1]:
+            removed[a] = None
+        return 1
 
-   def perform_rules(self, glyphs, grid_size=100, recurse=0,
-                     progress=None, _recursion_level=0):
-      self._exceptions = util.Set()
-      if _recursion_level > 10:
-         return [], []
-      elif _recursion_level == 0:
-         progress = util.ProgressFactory("Performing rules...")
+    def perform_rules(self, glyphs, grid_size=100, recurse=0,
+                      progress=None, _recursion_level=0):
+        self._exceptions = util.Set()
+        if _recursion_level > 10:
+            return [], []
+        elif _recursion_level == 0:
+            progress = util.ProgressFactory("Performing rules...")
 
-      try:
-         grid_index = group.GridIndexWithKeys(glyphs, grid_size, grid_size)
-         found_regexs = {}
-         for regex_string, compiled in self._regexs.items():
-            for glyph in glyphs:
-               if glyph.match_id_name(compiled):
-                  grid_index.add_glyph_by_key(glyph, regex_string)
-                  found_regexs[regex_string] = None
+        try:
+            grid_index = group.GridIndexWithKeys(glyphs, grid_size, grid_size)
+            found_regexs = {}
+            for regex_string, compiled in self._regexs.items():
+                for glyph in glyphs:
+                    if glyph.match_id_name(compiled):
+                        grid_index.add_glyph_by_key(glyph, regex_string)
+                        found_regexs[regex_string] = None
 
-         # This loop is only so the progress bar can do something useful.
-         for regex in found_regexs.iterkeys():
-            progress.add_length(
-              len(self._rules_by_regex[regex]) *
-              len(grid_index.get_glyphs_by_key(regex)))
+            # This loop is only so the progress bar can do something useful.
+            for regex in found_regexs.iterkeys():
+                progress.add_length(
+                  len(self._rules_by_regex[regex]) *
+                  len(grid_index.get_glyphs_by_key(regex)))
 
-         added = {}
-         removed = {}
-         for regex in found_regexs.iterkeys():
-            for rule in self._rules_by_regex[regex]:
-               glyph_specs = rule.func_defaults
-               for glyph in grid_index.get_glyphs_by_key(regex):
-                  if len(glyph_specs) == 1:
-                     self._deal_with_result(rule, (glyph,), added, removed)
-                  elif len(glyph_specs) == 2:
-                     for glyph2 in grid_index.get_glyphs_around_glyph_by_key(
-                       glyph, glyph_specs[1]):
-                        stop = self._deal_with_result(rule, (glyph, glyph2), added, removed)
-                        if not self._reapply and stop:
-                           break
-                  else:
-                     seed = [list(grid_index.get_glyphs_around_glyph_by_key(glyph, x))
-                             for x in glyph_specs[1:]]
-                     for combination in util.combinations(seed):
-                        stop = self._deal_with_result(rule, [glyph] + combination,
-                                                      added, removed)
-                        if not self._reapply and stop:
-                           break
-                  progress.step()
-      finally:
-         if _recursion_level == 0:
-            progress.kill()
-      if recurse and len(added):
-         self._deal_with_result(
-           self.perform_rules(added.keys(), 1, progress, _recursion_level + 1))
+            added = {}
+            removed = {}
+            for regex in found_regexs.iterkeys():
+                for rule in self._rules_by_regex[regex]:
+                    glyph_specs = rule.func_defaults
+                    for glyph in grid_index.get_glyphs_by_key(regex):
+                        if len(glyph_specs) == 1:
+                            self._deal_with_result(rule, (glyph,), added, removed)
+                        elif len(glyph_specs) == 2:
+                            for glyph2 in grid_index.get_glyphs_around_glyph_by_key(
+                              glyph, glyph_specs[1]):
+                                stop = self._deal_with_result(rule, (glyph, glyph2), added, removed)
+                                if not self._reapply and stop:
+                                    break
+                        else:
+                            seed = [list(grid_index.get_glyphs_around_glyph_by_key(glyph, x))
+                                    for x in glyph_specs[1:]]
+                            for combination in util.combinations(seed):
+                                stop = self._deal_with_result(rule, [glyph] + combination,
+                                                              added, removed)
+                                if not self._reapply and stop:
+                                    break
+                        progress.step()
+        finally:
+            if _recursion_level == 0:
+                progress.kill()
+        if recurse and len(added):
+            self._deal_with_result(
+              self.perform_rules(added.keys(), 1, progress, _recursion_level + 1))
 
-      if len(self._exceptions):
-         s = ("One or more of the rule functions caused an exception.\n" +
-              "(Each exception listed only once):\n\n" +
-              "\n".join(self._exceptions))
-         raise RuleEngineError(s)
+        if len(self._exceptions):
+            s = ("One or more of the rule functions caused an exception.\n" +
+                 "(Each exception listed only once):\n\n" +
+                 "\n".join(self._exceptions))
+            raise RuleEngineError(s)
 
-      return added.keys(), removed.keys()
+        return added.keys(), removed.keys()
