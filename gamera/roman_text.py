@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -34,7 +34,7 @@ See the docstrings of the classes and functions for more information.
 
   # image is a one-bit image
   # classifier is a classifier object with a production database loaded
-  
+
   page = roman_text.ocr(image, classifier)
 
 *page* is a ``Page`` object.  You can display how the page was
@@ -71,6 +71,7 @@ of Python.  For instance, Python 2.3.x supports Unicode 3.2.0.
 from gamera import core
 import unicodedata
 import string
+
 
 class Page:
     def __init__(self, image, glyphs):
@@ -134,7 +135,7 @@ class Page:
         """Find the sections within an image - this finds large blocks
         of text making it possible to find the lines within complex
         text layouts."""
-      
+
         glyphs = self.glyphs
 
         FUDGE = self.__avg_glyph_size(glyphs) * self.section_search_size
@@ -150,11 +151,11 @@ class Page:
                 if self.__fill:
                     g.fill_white()
         glyphs = new_glyphs
-        
+
         # Sort the glyphs left-to-right and top-to-bottom
         glyphs.sort(lambda x, y: cmp(x.ul_x, y.ul_x))
         glyphs.sort(lambda x, y: cmp(x.ul_y, y.ul_y))
-        
+
         # Create rectangles for each glyph that are bigger by FUDGE
         big_rects = []
         for g in glyphs:
@@ -162,7 +163,8 @@ class Page:
             ul_x = max(0, g.ul_x - FUDGE)
             lr_y = min(self.image.lr_y, g.lr_y + FUDGE)
             lr_x = min(self.image.lr_x, g.lr_x + FUDGE)
-            ul_x = int(ul_x); ul_y = int(ul_y)
+            ul_x = int(ul_x)
+            ul_y = int(ul_y)
             nrows = int(lr_y - ul_y + 1)
             ncols = int(lr_x - ul_x + 1)
             big_rects.append(core.Rect(core.Point(ul_x, ul_y), core.Dim(ncols, nrows)))
@@ -200,12 +202,12 @@ class Page:
             # Bail when we are done.
             if current >= len(rects):
                 break
-        
+
         # Create the sections
         sections = []
         for rect in rects:
             sections.append(Section(rect))
-        
+
         # Place the original (small) glyphs into the sections
         for glyph in self.glyphs:
             if self.__section_size_test(glyph):
@@ -213,19 +215,19 @@ class Page:
                     if s.bbox.intersects(glyph):
                         s.add_glyph(glyph)
                         break
-        
+
         # Fix up the bounding boxes
         for s in sections:
             s.calculate_bbox()
-                
+
         self.sections = sections
-        
+
     def display_sections(self, clear=1):
         """Display the sections found by placing a box around them
         in a display. If clear is true then any boxes already on
         the displayed are cleared first."""
         # display the sections
-        result = self.sections                
+        result = self.sections
 
         if self.image._display == None:
             self.image.display()
@@ -263,6 +265,7 @@ class Page:
     def display_segmentation(self):
         self.display_lines()
         self.display_sections(0)
+
 
 class Section:
     def __init__(self, bbox):
@@ -307,7 +310,7 @@ class Section:
         total_area = 0.0
         total_gheight = 0.0
         total_gwidth = 0.0
-        
+
         for g in self.glyphs:
             nrows = g.nrows
             ncols = g.ncols
@@ -329,7 +332,6 @@ class Section:
         l = len(self.lines)
         self.avg_line_height = total_lheight / l
         self.avg_line_width = total_lwidth / l
-        
 
     def __find_intersecting_lines(self, glyphs, index):
         g = glyphs[index]
@@ -355,7 +357,7 @@ class Section:
                 glyphs.append(self.glyphs[i])
         orig_glyphs = self.glyphs
         self.glyphs = glyphs
-        
+
         # find the lines - this is very basic for now
         lines = []
         for glyph in self.glyphs:
@@ -400,10 +402,10 @@ class Section:
                     break
             if not found:
                 print "Did not find lines for all tall glyphs"
-                
+
         self.glyphs = orig_glyphs
         self.lines = lines
-        
+
 
 class Line:
     def __init__(self, glyph):
@@ -434,7 +436,8 @@ class Line:
     def merge(self, line):
         self.glyphs.extend(line.glyphs)
         self.calculate_stats()
-        
+
+
 def name_lookup_old(id_name):
     """Converts a symbol name into a single character."""
     split_string = string.split(id_name, '.')
@@ -490,6 +493,7 @@ def name_lookup_old(id_name):
     else:
         return ""
 
+
 def name_lookup_unicode(id_name):
     name = id_name.replace(".", " ")
     name = name.upper()
@@ -498,7 +502,8 @@ def name_lookup_unicode(id_name):
     except KeyError:
         print "ERROR: Name not found:", name
         return ""
-    
+
+
 def make_string(lines, name_lookup_func=name_lookup_unicode):
     s = ""
 
@@ -511,11 +516,12 @@ def make_string(lines, name_lookup_func=name_lookup_unicode):
         for i in range(len(glyphs)):
             if i > 0:
                 if (glyphs[i].ul_x - glyphs[i - 1].lr_x) > (average_space * 2):
-                    
+
                     s = s + " "
             s = s + name_lookup_func(glyphs[i].get_main_id())
         s = s + "\n"
     return s
+
 
 def output(lines, filename="text.txt"):
     s = make_string(lines)
@@ -524,7 +530,8 @@ def output(lines, filename="text.txt"):
     f.flush()
     f.close()
 
-def ocr(image, classifier = None, glyphs = None):
+
+def ocr(image, classifier=None, glyphs=None):
     """Performs basic OCR segmentation.
 
 *image*: OneBit image
