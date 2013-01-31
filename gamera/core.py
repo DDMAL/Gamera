@@ -47,20 +47,21 @@ import sys
 import types
 import os
 
-# import the classification states
 try:
-    from gameracore import UNCLASSIFIED, AUTOMATIC, HEURISTIC, MANUAL
+    from gamera import gameracore
 except ImportError:
-    raise ImportError("Couldn't import the core of Gamera.  Are you trying to start the GUI from the root of the Gamera source tree?  This confuses the Python module loading mechanism.")
-
-
-from gameracore import Image, SubImage, Cc, MlCc
-from gameracore import DENSE, RLE
+    raise ImportError("Couldn't import the core of Gamera. Are you trying to start the GUI from the root of the Gamera source tree? This confuses the Python module loading mechanism.")
 
 from gamera.config import config
+
+# since many plugins rely on these being available when importing "core"
+# we will import them even if they are not used in this module.
 from gamera.enums import ONEBIT, GREYSCALE, FLOAT, COMPLEX, ALL, GREY16, RGB
+from gamera.gameracore import UNCLASSIFIED, AUTOMATIC, HEURISTIC, MANUAL
+from gamera.gameracore import DENSE, RLE
 from gamera.gameracore import CONFIDENCE_DEFAULT, CONFIDENCE_KNNFRACTION, CONFIDENCE_LINEARWEIGHT, CONFIDENCE_INVERSEWEIGHT, CONFIDENCE_NUN, CONFIDENCE_NNDISTANCE, CONFIDENCE_AVGDISTANCE
 from gamera.gameracore import ImageData, Size, Dim, Point, FloatPoint, Rect, Region, RegionMap, ImageInfo, RGBPixel
+
 from gamera.gui import has_gui
 from gamera import paths
 from gamera import util
@@ -579,11 +580,11 @@ class ImageBase:
 
 
 ######################################################################
-class Image(Image, ImageBase):
+class Image(gameracore.Image, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        Image.__init__(self, *args, **kwargs)
-    __init__.__doc__ = Image.__doc__
+        gameracore.Image.__init__(self, *args, **kwargs)
+    __init__.__doc__ = gameracore.Image.__doc__
 
     def __del__(self):
         if self._display:
@@ -591,11 +592,11 @@ class Image(Image, ImageBase):
 
 
 ######################################################################
-class SubImage(SubImage, ImageBase):
+class SubImage(gameracore.SubImage, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        SubImage.__init__(self, *args, **kwargs)
-    __init__.__doc__ = SubImage.__doc__
+        gameracore.SubImage.__init__(self, *args, **kwargs)
+    __init__.__doc__ = gameracore.SubImage.__doc__
 
     def __del__(self):
         if self._display:
@@ -603,11 +604,11 @@ class SubImage(SubImage, ImageBase):
 
 
 ######################################################################
-class Cc(Cc, ImageBase):
+class Cc(gameracore.Cc, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        Cc.__init__(self, *args, **kwargs)
-    __init__.__doc__ = Cc.__doc__
+        gameracore.Cc.__init__(self, *args, **kwargs)
+    __init__.__doc__ = gameracore.Cc.__doc__
 
     def __del__(self):
         if self._display:
@@ -633,11 +634,11 @@ class Cc(Cc, ImageBase):
         self.last_display = "context"
 
 
-class MlCc(MlCc, ImageBase):
+class MlCc(gameracore.MlCc, ImageBase):
     def __init__(self, *args, **kwargs):
         ImageBase.__init__(self)
-        MlCc.__init__(self, *args, **kwargs)
-    __init__.__doc__ = MlCc.__doc__
+        gameracore.MlCc.__init__(self, *args, **kwargs)
+    __init__.__doc__ = gameracore.MlCc.__doc__
 
     def __del__(self):
         if self._display:
@@ -650,7 +651,7 @@ _gamera_initialised = False
 
 def _init_gamera():
     from gamera import plugin
-    from gamera.args import ImageType, FileOpen, FileSave, NoneDefault, Args, String, Float, Choice, Check, Point
+    from gamera import args
     from gamera import gamera_xml
     global _gamera_initialised
     if _gamera_initialised:
@@ -659,53 +660,53 @@ def _init_gamera():
     # Create the default functions for the menupl
     for method in (
        plugin.PluginFactory(
-          "load_image", "File", ImageType(ALL, "image"),
-          ImageType(ALL), Args([FileOpen("filename", extension=util.load_image_file_extension_finder)])),
+          "load_image", "File", args.ImageType(ALL, "image"),
+          args.ImageType(ALL), args.Args([args.FileOpen("filename", extension=util.load_image_file_extension_finder)])),
        plugin.PluginFactory(
           "save_image", "File", None,
-          ImageType(ALL), Args([FileSave("filename", extension=util.save_image_file_extension_finder)])),
+          args.ImageType(ALL), args.Args([args.FileSave("filename", extension=util.save_image_file_extension_finder)])),
        plugin.PluginFactory(
-          "display", "Displaying", None, ImageType(ALL), None),
+          "display", "Displaying", None, args.ImageType(ALL), None),
        plugin.PluginFactory(
-          "display_ccs", "Displaying", None, ImageType([ONEBIT]),
+          "display_ccs", "Displaying", None, args.ImageType([ONEBIT]),
           None),
        plugin.PluginFactory(
           "display_false_color", "Displaying", None,
-          ImageType([GREYSCALE, FLOAT]),
+          args.ImageType([GREYSCALE, FLOAT]),
           None),
        plugin.PluginFactory(
           "classify_manual", "Classification", None,
-          ImageType([ONEBIT]), Args([String("id")])),
+          args.ImageType([ONEBIT]), args.Args([args.String("id")])),
        plugin.PluginFactory(
           "classify_heuristic", "Classification", None,
-          ImageType([ONEBIT]), Args([String("id")])),
+          args.ImageType([ONEBIT]), args.Args([args.String("id")])),
        plugin.PluginFactory(
           "classify_automatic", "Classification", None,
-          ImageType([ONEBIT]), Args([String("id")])),
+          args.ImageType([ONEBIT]), args.Args([args.String("id")])),
        plugin.PluginFactory(
           "unclassify", "Classification", None,
-          ImageType([ONEBIT]), None),
+          args.ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "get_main_id", "Classification", String("id"),
-          ImageType([ONEBIT]), None),
+          "get_main_id", "Classification", args.String("id"),
+          args.ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "get_confidence", "Classification", Float("confidence"),
-          ImageType([ONEBIT]), Args([Choice("confidence_type", default=NoneDefault)])),
+          "get_confidence", "Classification", args.Float("confidence"),
+          args.ImageType([ONEBIT]), args.Args([args.Choice("confidence_type", default=args.NoneDefault)])),
        plugin.PluginFactory(
-          "has_id_name", "Classification", Check("result"),
-          ImageType([ONEBIT]), Args([String("id")])),
+          "has_id_name", "Classification", args.Check("result"),
+          args.ImageType([ONEBIT]), args.Args([args.String("id")])),
        plugin.PluginFactory(
           #"subimage", "Utility", plugin.Check("result"),
-          "subimage", "Utility", ImageType(ALL),
-          ImageType(ALL), Args([Point("upper_left"),
-                                              Point("lower_right")])),
+          "subimage", "Utility", args.ImageType(ALL),
+          args.ImageType(ALL), args.Args([args.Point("upper_left"),
+                                              args.Point("lower_right")])),
        plugin.PluginFactory(
-          "to_xml", "XML", String('xml'),
-          ImageType([ONEBIT]), None),
+          "to_xml", "XML", args.String('xml'),
+          args.ImageType([ONEBIT]), None),
        plugin.PluginFactory(
-          "to_xml_filename", "XML", None, ImageType([ONEBIT]),
-          Args([
-       FileSave("filename", extension=gamera_xml.extensions)]))
+          "to_xml_filename", "XML", None, args.ImageType([ONEBIT]),
+          args.Args([
+       args.FileSave("filename", extension=gamera_xml.extensions)]))
        ):
         method.register()
     try:
