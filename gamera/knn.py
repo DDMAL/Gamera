@@ -19,9 +19,6 @@
 #
 
 import array
-import threading
-import sys
-import os
 from gamera import core
 from gamera import util
 from gamera import classify
