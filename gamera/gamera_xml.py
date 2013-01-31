@@ -23,12 +23,14 @@ import gzip
 import os
 import cStringIO
 import warnings
+from weakref import proxy
 from xml.parsers import expat
 
 from gamera import core
 from gamera import util
+from gamera.plugins import runlength
 from gamera.symbol_table import SymbolTable
-from config import config
+from gamera.config import config
 
 config.add_option(
    "", "--xml-encoding", action="store", default="utf-8",
@@ -223,6 +225,7 @@ class LoadXML:
         self._progress_value = 0
 
     def try_type_convert(self, dictionary, key, typename, tagname):
+        print "converting", tagname, " ", dictionary[key]
         try:
             return typename(dictionary[key])
         except KeyError:
@@ -263,8 +266,11 @@ class LoadXML:
         try:
             try:
                 self._parser.ParseFile(stream)
-            except expat.ExpatError:
+            except expat.ExpatError, e:
                 raise
+        except Exception, e:
+            import pdb
+            pdb.set_trace()
         finally:
             self._progress.kill()
             self._remove_handlers()
@@ -281,6 +287,7 @@ class LoadXML:
 
     def _start_element_handler(self, name, attributes):
         try:
+            print name, " ", attributes
             self._start_elements[name](attributes)
         except KeyError:
             pass

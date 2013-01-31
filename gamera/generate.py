@@ -25,6 +25,10 @@ from distutils.core import Extension
 from distutils.dep_util import newer
 from gamera import pyplate
 
+# this is not used directly, but is needed to support type conversions
+# between Python and C++
+from gamera import args_wrappers
+
 global std_import
 global plugins_to_ignore
 
@@ -71,8 +75,8 @@ def restore_import():
 template = pyplate.Template("""
   [[exec import os]]
   [[exec from gamera.enums import GREYSCALE, GREY16, RGB]]
-  [[exec from gamera.plugin import PluginFunction, PluginModule]]
-  [[exec from gamera.args import ImageType, Class, Real]]
+  [[ exec from gamera.plugin import PluginFunction, PluginModule ]]
+  [[exec from gamera.args import ImageType, Class, Real ]]
   [[exec from gamera.util import get_pixel_type_name]]
 
   [[# This should be included first in order to avoid libpng.h/setjmp.h problems. #]]

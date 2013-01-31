@@ -28,6 +28,13 @@ import glob
 from distutils.sysconfig import get_python_lib, get_python_inc, PREFIX
 from distutils.command import install_data
 
+# If gamera.generate is imported gamera.__init__.py will
+# also be imported, which won't work until the build is
+# finished. To get around this, the gamera directory is
+# added to the path and generate is imported directly
+sys.path.append("gamera")
+from gamera import generate
+
 # Fix RPM building
 #
 # This is a total hack to patch up an error in distutils.command.bdist_rpm
@@ -73,13 +80,6 @@ elif sys.platform == "win32":
         cmdclass['bdist_msi'] = bdist_msi.bdist_msi
     except ImportError:
         pass
-
-# If gamera.generate is imported gamera.__init__.py will
-# also be imported, which won't work until the build is
-# finished. To get around this, the gamera directory is
-# added to the path and generate is imported directly
-sys.path.append("gamera")
-import generate
 
 extras = {'extra_compile_args': ['-Wall']}
 if sys.platform == 'win32' and not '--compiler=mingw32' in sys.argv:

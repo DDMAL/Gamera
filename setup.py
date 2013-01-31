@@ -25,6 +25,12 @@ import glob
 import datetime
 import platform
 
+# We do this first, so that when gamera.__init__ loads gamera.__version__,
+# it is in fact the new and updated version
+gamera_version = open("version", 'r').readlines()[0].strip()
+open("gamera/__version__.py", "w").write("ver = '%s'\n\n" % gamera_version)
+print "Gamera version:", gamera_version
+
 from distutils.core import setup, Extension
 from gamera import gamera_setup
 
@@ -35,15 +41,11 @@ from gamera import gamera_setup
 #     scheme['data'] = scheme['purelib']
 
 #sys.exit(0)
-
 if sys.hexversion < 0x02030000:
     print "At least Python 2.3 is required to build Gamera.  You have"
     print sys.version
     sys.exit(1)
 
-# We do this first, so that when gamera.__init__ loads gamera.__version__,
-# it is in fact the new and updated version
-gamera_version = open("version", 'r').readlines()[0].strip()
 cross_compiling = False
 has_openmp = False
 no_wx = False
@@ -75,8 +77,6 @@ if "--nowx" in sys.argv:
     sys.argv.remove("--nowx")
 
 
-open("gamera/__version__.py", "w").write("ver = '%s'\n\n" % gamera_version)
-print "Gamera version:", gamera_version
 
 # query OpenMP (parallelization) support and save it to compile time config file
 if has_openmp is None:

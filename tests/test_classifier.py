@@ -1,4 +1,4 @@
-from gamera.core import *
+from gamera.core import init_gamera, load_image
 from gamera import knn, classify, gamera_xml
 init_gamera()
 
@@ -15,115 +15,117 @@ results = [
 #featureset = ['area', 'aspect_ratio', 'black_area', 'compactness', 'moments', 'ncols_feature', 'nholes', 'nholes_extended', 'nrows_feature', 'skeleton_features', 'top_bottom', 'volume', 'volume16regions', 'volume64regions', 'zernike_moments']
 featureset = ['area', 'aspect_ratio', 'black_area', 'moments', 'nholes_extended', 'skeleton_features', 'volume64regions']
 
-def _test_grouping(classifier, ccs):
-   classifier.change_feature_set(featureset)
-   cases = [(classify.ShapedGroupingFunction(4), 'min'),
-             (classify.ShapedGroupingFunction(4), 'avg'),
-             (None, 'min'),
-             (None, 'avg')
-            ]
 
-   for (i, (func, criterion)) in enumerate(cases):
+def _test_grouping(classifier, ccs):
+    classifier.change_feature_set(featureset)
+    cases = [(classify.ShapedGroupingFunction(4), 'min'),
+              (classify.ShapedGroupingFunction(4), 'avg'),
+              (None, 'min'),
+              (None, 'avg')
+             ]
+
+    for (i, (func, criterion)) in enumerate(cases):
         if func == None:
-            added,removed = classifier.group_list_automatic(ccs, criterion=criterion)
+            added, removed = classifier.group_list_automatic(ccs, criterion=criterion)
         else:
             added, removed = classifier.group_list_automatic(
                ccs,
-               grouping_function = func,
-               max_parts_per_group = 10,
-               max_graph_size = 64,
+               grouping_function=func,
+               max_parts_per_group=10,
+               max_graph_size=64,
                criterion=criterion)
-   
-        added.sort(lambda a,b: cmp(a.offset_x,b.offset_x))
+
+        added.sort(lambda a, b: cmp(a.offset_x, b.offset_x))
         assert [cc.get_main_id() for cc in added] == results[i]
 
 
 def _test_classification(classifier, ccs):
-   (id_name, confidence) = classifier.guess_glyph_automatic(ccs[0])
-   assert id_name == [(1.0, 'latin.lower.letter.h')]
+    (id_name, confidence) = classifier.guess_glyph_automatic(ccs[0])
+    assert id_name == [(1.0, 'latin.lower.letter.h')]
 
-   classifier.classify_glyph_automatic(ccs[1])
-   assert ccs[1].id_name == [(1.0, 'latin.lower.ligature.ft')]
-   
-   added, removed = classifier.classify_list_automatic(ccs)
-   assert [cc.get_main_id() for cc in ccs] == correct_classes
-   assert added == [] and removed == []
+    classifier.classify_glyph_automatic(ccs[1])
+    assert ccs[1].id_name == [(1.0, 'latin.lower.ligature.ft')]
 
-   classifier.classify_and_update_list_automatic(ccs)
-   assert [cc.get_main_id() for cc in ccs] == correct_classes
+    added, removed = classifier.classify_list_automatic(ccs)
+    assert [cc.get_main_id() for cc in ccs] == correct_classes
+    assert added == [] and removed == []
 
-   classifier.change_feature_set(['area'])
-   assert len(list(classifier.database)[0].features) == 1
+    classifier.classify_and_update_list_automatic(ccs)
+    assert [cc.get_main_id() for cc in ccs] == correct_classes
 
-   added, removed = classifier.classify_list_automatic(ccs)
-   assert [cc.get_main_id() for cc in ccs] != correct_classes
+    classifier.change_feature_set(['area'])
+    assert len(list(classifier.database)[0].features) == 1
 
-   _test_grouping(classifier, ccs)
+    added, removed = classifier.classify_list_automatic(ccs)
+    assert [cc.get_main_id() for cc in ccs] != correct_classes
+
+    _test_grouping(classifier, ccs)
 
 
 def _test_training(classifier, ccs):
-   length = len(classifier.get_glyphs())
-   classifier.classify_glyph_manual(ccs[0], "dummy")
-   assert len(classifier.get_glyphs()) == length + 1
-   added, removed = classifier.classify_list_manual(ccs, "dummy")
-   assert len(classifier.get_glyphs()) == length + len(ccs)
-   assert added == [] and removed == []
-   classifier.classify_and_update_list_manual(ccs, "dummy")
-   assert len(classifier.get_glyphs()) == length + len(ccs)
-   classifier.add_to_database(ccs)
-   assert len(classifier.get_glyphs()) == length + len(ccs)
-   classifier.remove_from_database(ccs)
-   assert len(classifier.get_glyphs()) == length
-   classifier.add_to_database(ccs)
-   assert len(classifier.get_glyphs()) == length + len(ccs)
+    length = len(classifier.get_glyphs())
+    classifier.classify_glyph_manual(ccs[0], "dummy")
+    assert len(classifier.get_glyphs()) == length + 1
+    added, removed = classifier.classify_list_manual(ccs, "dummy")
+    assert len(classifier.get_glyphs()) == length + len(ccs)
+    assert added == [] and removed == []
+    classifier.classify_and_update_list_manual(ccs, "dummy")
+    assert len(classifier.get_glyphs()) == length + len(ccs)
+    classifier.add_to_database(ccs)
+    assert len(classifier.get_glyphs()) == length + len(ccs)
+    classifier.remove_from_database(ccs)
+    assert len(classifier.get_glyphs()) == length
+    classifier.add_to_database(ccs)
+    assert len(classifier.get_glyphs()) == length + len(ccs)
+
 
 def test_interactive_classifier():
-   # We assume the XML reading/writing itself is fine (given
-   # test_xml), but we should test the wrappers in classify anyway
-   image = load_image("data/testline.png")
-   ccs = image.cc_analysis()
+    # We assume the XML reading/writing itself is fine (given
+    # test_xml), but we should test the wrappers in classify anyway
+    image = load_image("data/testline.png")
+    ccs = image.cc_analysis()
 
-   classifier = knn.kNNInteractive([],features=featureset)
-   assert classifier.is_interactive()
-   assert len(classifier.get_glyphs()) == 0
-   
-   classifier.from_xml_filename("data/testline.xml")
-   assert len(classifier.get_glyphs()) == 66
-   _test_classification(classifier, ccs)
-   _test_training(classifier, ccs)
-   length = len(classifier.get_glyphs())
+    classifier = knn.kNNInteractive([], features=featureset)
+    assert classifier.is_interactive()
+    assert len(classifier.get_glyphs()) == 0
 
-   # subtract len(group_parts) because to_xml_filename() does 
-   # not save "_group._part"
-   group_parts = [x for x in classifier.get_glyphs() 
-                  if x.get_main_id().startswith("_group._part")]
-   length = length - len(group_parts)
+    classifier.from_xml_filename("data/testline.xml")
+    assert len(classifier.get_glyphs()) == 66
+    _test_classification(classifier, ccs)
+    _test_training(classifier, ccs)
+    length = len(classifier.get_glyphs())
 
-   classifier.to_xml_filename("tmp/testline_classifier.xml")
-   classifier.from_xml_filename("tmp/testline_classifier.xml")
-   assert len(classifier.get_glyphs()) == length
-   classifier.merge_from_xml_filename("data/testline.xml")
-   assert len(classifier.get_glyphs()) == length + 66
-   classifier.clear_glyphs()
-   assert len(classifier.get_glyphs()) == 0
-   classifier.from_xml_filename("data/testline.xml")
-   assert len(classifier.get_glyphs()) == 66
-   
+    # subtract len(group_parts) because to_xml_filename() does
+    # not save "_group._part"
+    group_parts = [x for x in classifier.get_glyphs()
+                   if x.get_main_id().startswith("_group._part")]
+    length = length - len(group_parts)
+
+    classifier.to_xml_filename("tmp/testline_classifier.xml")
+    classifier.from_xml_filename("tmp/testline_classifier.xml")
+    assert len(classifier.get_glyphs()) == length
+    classifier.merge_from_xml_filename("data/testline.xml")
+    assert len(classifier.get_glyphs()) == length + 66
+    classifier.clear_glyphs()
+    assert len(classifier.get_glyphs()) == 0
+    classifier.from_xml_filename("data/testline.xml")
+    assert len(classifier.get_glyphs()) == 66
+
+
 def test_noninteractive_classifier():
-   # We assume the XML reading/writing itself is fine (given
-   # test_xml), but we should test the wrappers in classify anyway
-   image = load_image("data/testline.png")
-   ccs = image.cc_analysis()
+    # We assume the XML reading/writing itself is fine (given
+    # test_xml), but we should test the wrappers in classify anyway
+    image = load_image("data/testline.png")
+    ccs = image.cc_analysis()
 
-   database = gamera_xml.glyphs_from_xml("data/testline.xml")
-   classifier = knn.kNNNonInteractive(database,features=featureset,normalize=False)
-   assert not classifier.is_interactive()
-   assert len(classifier.get_glyphs()) == 66
-   
-   _test_classification(classifier, ccs)
+    database = gamera_xml.glyphs_from_xml("data/testline.xml")
+    classifier = knn.kNNNonInteractive(database, features=featureset, normalize=False)
+    assert not classifier.is_interactive()
+    assert len(classifier.get_glyphs()) == 66
 
-   classifier.serialize("tmp/serialized.knn")
-   classifier.clear_glyphs()
-   assert len(classifier.get_glyphs()) == 0
-   classifier.unserialize("tmp/serialized.knn")
+    _test_classification(classifier, ccs)
 
+    classifier.serialize("tmp/serialized.knn")
+    classifier.clear_glyphs()
+    assert len(classifier.get_glyphs()) == 0
+    classifier.unserialize("tmp/serialized.knn")
