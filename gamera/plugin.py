@@ -27,8 +27,10 @@ import sys
 import copy
 import types
 
-from gamera.args import Args, ImageType
-from gamera.enums import ALL, NONIMAGE
+# These wildcard imports are necessary for backwards compatibility.
+from gamera.args import *
+from gamera.enums import *
+
 from gamera import util
 from gamera.backport import sets
 
