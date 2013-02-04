@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 Christoph Dalitz
+ * Copyright (C) 2009-2013 Christoph Dalitz
  *               2010      Oliver Christen
  *               2011      Christian Brandt
  *               2012      David Kolanus
@@ -289,7 +289,7 @@ namespace Gamera {
   void delaunay_from_points_cpp(PointVector *pv, IntVector *lv, std::map<int,std::set<int> > *result) {
 
     // some plausi checks
-	if (pv->empty()) {
+  if (pv->empty()) {
       throw std::runtime_error("No points for triangulation given.");
     }
     if (pv->size() < 3) {
@@ -327,12 +327,12 @@ namespace Gamera {
   }
   
   PyObject* delaunay_from_points(PointVector *pv, IntVector *lv) {
-  	PyObject *list, *entry, *label1, *label2;
+    PyObject *list, *entry, *label1, *label2;
     std::map<int,std::set<int> > neighbors;
     std::map<int,std::set<int> >::iterator nit1;
     std::set<int>::iterator nit2;
-  	
-	delaunay_from_points_cpp(pv, lv, &neighbors);
+    
+  delaunay_from_points_cpp(pv, lv, &neighbors);
     list = PyList_New(0);
     for (nit1=neighbors.begin(); nit1!=neighbors.end(); ++nit1) {
       for (nit2=nit1->second.begin(); nit2!=nit1->second.end(); nit2++) {
@@ -346,7 +346,7 @@ namespace Gamera {
       }
     }
 
-  	return list;
+    return list;
   }
 
 
@@ -437,12 +437,96 @@ namespace Gamera {
     return graph;
   }
 
+  // two helper classes for color cluster generation
+  class RgbColor4Heap {
+  public:
+    RGBPixel color;
+    double distance;
+    RgbColor4Heap(const RGBPixel& c, double d) {color = c; distance = d;}
+  };
+  class Compare_RgbColor4Heap {
+  public:
+    bool operator()(const RgbColor4Heap &n, const RgbColor4Heap &m) {
+      return (n.distance > m.distance);
+    }
+  };
+
+  void generate_color_cluster(const RGBPixel* center, size_t ncolors, std::vector<RGBPixel>* cluster) {
+
+    // some local helper functions and classes
+    struct local {
+      static void rgbneighbors(const RGBPixel& p, std::vector<RGBPixel>* nns) {
+        nns->clear();
+        int r,g,b;
+        int minr, ming, minb;
+        int maxr, maxg, maxb;
+        if (p.red()<255)   maxr = +1; else maxr = 0;
+        if (p.green()<255) maxg = +1; else maxg = 0;
+        if (p.blue()<255)  maxb = +1; else maxb = 0;
+        if (p.red()>0)   minr = -1; else minr = 0;
+        if (p.green()>0) ming = -1; else ming = 0;
+        if (p.blue()>0)  minb = -1; else minb = 0;
+        for (r=minr; r<=maxr; r++)
+          for (g=ming; g<=maxg; g++)
+            for (b=minb; b<=maxb; b++)
+              nns->push_back(RGBPixel((int)p.red()+r,p.green()+g,p.blue()+b));
+      }
+      static double rgbdistance(const RGBPixel& p1, const RGBPixel& p2) {
+        return (p1.red()-(double)p2.red())*(p1.red()-(double)p2.red()) +
+          (p1.green()-(double)p2.green())*(p1.green()-(double)p2.green()) +
+          (p1.blue()-(double)p2.blue())*(p1.blue()-(double)p2.blue());
+      }
+    };
+
+    // here starts the function code
+    cluster->clear();
+    if (ncolors < 1) return;
+    cluster->push_back(*center);
+    if (ncolors < 2) return;
+
+    RGBPixel color;
+    size_t i,j;
+    // set of selected colors for quick check for existence
+    std::set<RGBPixel> selectedcolors;
+    selectedcolors.insert(*center);
+    // neighbors of new point
+    std::vector<RGBPixel> neighbors;
+    // queue of color candidates
+    std::priority_queue<RgbColor4Heap, std::vector<RgbColor4Heap>, Compare_RgbColor4Heap> candidateheap;
+    local::rgbneighbors(*center, &neighbors);
+    for (i=0; i<neighbors.size(); i++) {
+      candidateheap.push(RgbColor4Heap(neighbors[i],local::rgbdistance(*center, neighbors[i])));
+      selectedcolors.insert(neighbors[i]);
+    }
+
+    for (i=1; i<ncolors; i++) {
+      //printf("neighbors: %i, candidates: %i\n", neighbors.size(), candidateheap.size()); fflush(stdout);
+      if (candidateheap.empty()) {
+        throw std::runtime_error("no new color candidates found");
+      }
+      color = candidateheap.top().color;
+      candidateheap.pop();
+      cluster->push_back(color);
+      // add neighbors of new color to candidates
+      local::rgbneighbors(color, &neighbors);
+      for (j=0; j<neighbors.size(); j++) {
+        if (selectedcolors.find(neighbors[j]) == selectedcolors.end()) {
+          candidateheap.push(RgbColor4Heap(neighbors[j],local::rgbdistance(*center,neighbors[j])));
+          selectedcolors.insert(neighbors[j]);
+        }
+      }
+    }
+
+  }
 
   template<class T>
-  RGBImageView* graph_color_ccs(T &image, ImageVector &ccs, PyObject *colors, int method) {
+  RGBImageView* graph_color_ccs(T &image, ImageVector &ccs, PyObject *colors, int method, bool unique=false) {
     Graph *graph = NULL;
     std::vector<RGBPixel*> RGBColors;
-    
+    size_t ncolors;
+    std::vector<std::vector<RGBPixel>*> colorclusters;
+    std::vector<RGBPixel>* cluster;
+
     // check input parameters
     if( ccs.size() == 0 ) {
       throw std::runtime_error("graph_color_ccs: no CCs given.");
@@ -454,9 +538,11 @@ namespace Gamera {
       throw std::runtime_error("graph_color_ccs: coloring algorithm only works "
             "with more than five colors");
     }
+    ncolors = PyList_Size(colors);
+    std::vector<size_t> colorcount(ncolors, 0);
 
     // extract the colors
-    for( int i = 0; i < PyList_Size(colors); i++) {
+    for(size_t i = 0; i < ncolors; i++) {
       PyObject *Py_RGBPixel = PyList_GetItem(colors, i);
       RGBPixel *RGBPixel    = ((RGBPixelObject*) Py_RGBPixel )->m_x;
       RGBColors.push_back(RGBPixel);
@@ -465,8 +551,29 @@ namespace Gamera {
     // build the graph from the given ccs
     graph = graph_from_ccs(image, ccs, method);
 
-    // volor the graph
-    graph->colorize( PyList_Size(colors) );
+    // color the graph
+    graph->colorize(ncolors);
+
+    // for unique coloring, generate color clusters around each color
+    if (unique) {
+      // count color frequencies
+      NodePtrIterator *nit = graph->get_nodes();
+      Node *n;
+      while((n=nit->next()) != NULL) {
+        colorcount[graph->get_color(n)] += 1;
+      }
+      delete nit;
+      // generate color clusters
+      for (size_t i=0; i<ncolors; i++) {
+        cluster = new std::vector<RGBPixel>;
+        generate_color_cluster(RGBColors[i], colorcount[i], cluster);
+        colorclusters.push_back(cluster);
+        //for (size_t i=0; i<cluster->size(); i++) {
+        //  RGBPixel p = cluster->at(i);
+        //  printf("(%i,%i,%i)\n", p.red(), p.green(), p.blue());
+        //}
+      }
+    }
 
     // Create the return image
     // Ccs not passed to the function are set black in the result
@@ -476,6 +583,7 @@ namespace Gamera {
        RGBViewFactory::create(image.origin(), image.dim());
     
     int label;
+    std::map<int,RGBPixel> labelcolor;
     for( size_t y = 0; y < image.nrows(); y++) {
       for( size_t x = 0; x < image.ncols(); x++ ) {
         label = image.get(Point(x,y));
@@ -483,8 +591,19 @@ namespace Gamera {
           try {
              GraphDataLong d(label);
              Node* n = graph->get_node(&d);
-             unsigned int c = graph->get_color(n);
-             coloredImage->set(Point(x,y), *RGBColors[c]);
+             unsigned int c = graph->get_color(n); // throws exception when not found
+             if (unique) {
+               if (labelcolor.find(label) == labelcolor.end()) {
+                 if (colorclusters[c]->empty())
+                   throw std::runtime_error("no color found for label");
+                 labelcolor[label] = colorclusters[c]->back();
+                 colorclusters[c]->pop_back();
+               }
+               coloredImage->set(Point(x,y), labelcolor[label]);
+             }
+             else {
+               coloredImage->set(Point(x,y), *RGBColors[c]);
+             }
           }
           catch( std::runtime_error runtimeError ) {
             coloredImage->set(Point(x,y), RGBPixel(0,0,0));
@@ -493,15 +612,19 @@ namespace Gamera {
       }
     }
 
+
+    // clean up
     NodePtrIterator* it = graph->get_nodes();
     Node* n;
-    
     while((n = it->next()) != NULL) {
       delete dynamic_cast<GraphDataLong*>(n->_value);
     }
-
     delete it;
     delete graph;
+    if (unique) {
+      for (size_t i=0; i<ncolors; i++)
+        delete colorclusters[i];
+    }
 
     return coloredImage;
   }
@@ -575,7 +698,7 @@ namespace Gamera {
         }
         else if(greater_distance(origin, p, found->second)) {
            stack_polarangle[polarangle] = p;
-    	}
+      }
      }
 
 
@@ -584,7 +707,7 @@ namespace Gamera {
      std::map<double, Point>::iterator pointIt;
      pointIt = stack_polarangle.begin();
 
-     retVector->push_back(origin); 	        // push point[0]
+     retVector->push_back(origin);          // push point[0]
 
      retVector->push_back(pointIt->second); // push point[1]
      pointIt++;
@@ -597,7 +720,7 @@ namespace Gamera {
      for( ; pointIt != stack_polarangle.end(); pointIt++) {
         p = pointIt->second;
         while(retVector->size() > 2 && clockwise_orientation(*(retVector->end()-2),*(retVector->end()-1), p) <= 0.0) {
-			retVector->pop_back();
+      retVector->pop_back();
         }
         retVector->push_back(p);
      }
@@ -683,11 +806,11 @@ namespace Gamera {
     Point best_lr(0,0);
     best_area = 0;
 
-	for (y=0; y<src.nrows(); ++y) {
+  for (y=0; y<src.nrows(); ++y) {
       open_width = 0;
       // update cache
       for (x=0; x<src.ncols(); ++x) {
-		if (is_black(src.get(Point(x,y)))) {
+    if (is_black(src.get(Point(x,y)))) {
           c[x] = 0;
         } else {
           ++c[x];
@@ -718,7 +841,7 @@ namespace Gamera {
           }
         }
       }
-	}
+  }
     if (is_black(src.get(best_lr))) {
       throw std::runtime_error("max_empty_rect: image has no white pixels.");
     }
@@ -729,4 +852,3 @@ namespace Gamera {
 
 } // namespace Gamera
 #endif
-

@@ -148,9 +148,9 @@ namespace Gamera {
     explicit Rgb(OneBitPixel s) {
       // TODO: fix for new ONEBIT
       if (s > 0) {
-	RGBValue<T>(1);
+  RGBValue<T>(1);
       } else {
-	RGBValue<T>(0);
+  RGBValue<T>(0);
       }
     }
 
@@ -186,10 +186,10 @@ namespace Gamera {
     */
     bool operator<(const Rgb<T>& other) const {
       const typename vigra::NumericTraits<T>::Promote s = 
-	(typename vigra::NumericTraits<T>::Promote)vigra::NumericTraits<T>::max;
+  (typename vigra::NumericTraits<T>::Promote)vigra::NumericTraits<T>::max;
       const typename vigra::NumericTraits<T>::Promote s2 = s * s;
       return (red() * s2 + green() * s + blue() <
-	      other.red() * s2 + green() * s + blue());
+        other.red() * s2 + other.green() * s + other.blue());
     }
 
     /// Set the red component to the passed in value.
@@ -227,18 +227,18 @@ namespace Gamera {
       FloatPixel maxc = (FloatPixel)std::max(data_[0], std::max(data_[1], data_[2]));
       FloatPixel minc = (FloatPixel)std::min(data_[0], std::min(data_[1], data_[2]));
       if (minc == maxc)
-	return 0;
+  return 0;
       FloatPixel den = (maxc - minc);
       FloatPixel rc = (maxc - data_[0]) / den;
       FloatPixel gc = (maxc - data_[1]) / den;
       FloatPixel bc = (maxc - data_[2]) / den;
       FloatPixel h;
       if (data_[0] == maxc)
-	h = bc - gc;
+  h = bc - gc;
       else if (data_[1] == maxc)
-	h = 2.0 + rc - bc;
+  h = 2.0 + rc - bc;
       else
-	h = 4.0 + gc - rc;
+  h = 4.0 + gc - rc;
       h /= 6.0;
       h -= floor(h);
       return h;
@@ -249,7 +249,7 @@ namespace Gamera {
       FloatPixel maxc = (FloatPixel)std::max(data_[0], std::max(data_[1], data_[2]));
       FloatPixel minc = (FloatPixel)std::min(data_[0], std::min(data_[1], data_[2]));
       if (minc == maxc)
-	return 0;
+  return 0;
       return (maxc - minc) / maxc;
     }
 
@@ -270,7 +270,7 @@ namespace Gamera {
       RGB2XYZFunctor<FloatPixel>::result_type xyz;
       xyz = rgb2xyz_func( RGBValue<FloatPixel>(data_[0], data_[1], data_[2]) );
       return xyz[1];
-	}
+  }
     FloatPixel const cie_z() {
       RGB2XYZFunctor<FloatPixel> rgb2xyz_func;
       RGB2XYZFunctor<FloatPixel>::result_type xyz;
@@ -279,25 +279,25 @@ namespace Gamera {
     }
 
     // conversion to CIE color space Lab
-	FloatPixel const cie_Lab_L() {
+  FloatPixel const cie_Lab_L() {
       RGB2LabFunctor<FloatPixel> rgb2lab_func;
       RGB2LabFunctor<FloatPixel>::result_type lab;
       lab = rgb2lab_func( RGBValue<FloatPixel>(data_[0], data_[1], data_[2]) );
       return lab[0];
     }
-	FloatPixel const cie_Lab_a() {
+  FloatPixel const cie_Lab_a() {
       RGB2LabFunctor<FloatPixel> rgb2lab_func;
       RGB2LabFunctor<FloatPixel>::result_type lab;
       lab = rgb2lab_func( RGBValue<FloatPixel>(data_[0], data_[1], data_[2]) );
       return lab[1];
     }
-	FloatPixel const cie_Lab_b() {
+  FloatPixel const cie_Lab_b() {
       RGB2LabFunctor<FloatPixel> rgb2lab_func;
       RGB2LabFunctor<FloatPixel>::result_type lab;
       lab = rgb2lab_func( RGBValue<FloatPixel>(data_[0], data_[1], data_[2]) );
       return lab[2];
     }
-	  
+    
     GreyScalePixel const cyan() {
       return std::numeric_limits<T>::max() - data_[0];
     }
@@ -334,9 +334,9 @@ namespace Gamera {
 //     /// Conversion operator to a OneBitPixel
 //     operator OneBitPixel() {
 //       if (luminance())
-// 	return 1;
+//  return 1;
 //       else
-// 	return 0;
+//  return 0;
 //     }
   };
 
@@ -458,8 +458,8 @@ namespace Gamera {
   template<>
   inline bool is_white<RGBPixel>(RGBPixel value) {
     return (value.red() == std::numeric_limits<GreyScalePixel>::max()
-	    && value.green() == std::numeric_limits<GreyScalePixel>::max()
-	    && value.blue() == std::numeric_limits<GreyScalePixel>::max());
+      && value.green() == std::numeric_limits<GreyScalePixel>::max()
+      && value.blue() == std::numeric_limits<GreyScalePixel>::max());
   }
 
   template<>
@@ -494,8 +494,8 @@ namespace Gamera {
   template<>
   inline RGBPixel pixel_traits<RGBPixel>::white() {
     return RGBPixel(std::numeric_limits<GreyScalePixel>::max(),
-		    std::numeric_limits<GreyScalePixel>::max(),
-		    std::numeric_limits<GreyScalePixel>::max());
+        std::numeric_limits<GreyScalePixel>::max(),
+        std::numeric_limits<GreyScalePixel>::max());
   }
 
   template<>
@@ -543,11 +543,11 @@ namespace Gamera {
 
   inline RGBPixel invert(RGBPixel value) {
     return RGBPixel(std::numeric_limits<RGBPixel::value_type>::max() -
-		    value.red(),
-		    std::numeric_limits<RGBPixel::value_type>::max() -
-		    value.green(),
-		    std::numeric_limits<RGBPixel::value_type>::max() -
-		    value.blue());
+        value.red(),
+        std::numeric_limits<RGBPixel::value_type>::max() -
+        value.green(),
+        std::numeric_limits<RGBPixel::value_type>::max() -
+        value.blue());
   }
 
   inline OneBitPixel invert(OneBitPixel value) {
@@ -579,8 +579,8 @@ namespace Gamera {
   inline RGBPixel blend(RGBPixel original, RGBPixel add, double alpha) {
     double inv_alpha = 1.0 - alpha;
     return RGBPixel(GreyScalePixel(original.red() * alpha + add.red() * inv_alpha),
-		    GreyScalePixel(original.green() * alpha + add.green() * inv_alpha),
-		    GreyScalePixel(original.blue() * alpha + add.blue() * inv_alpha));
+        GreyScalePixel(original.green() * alpha + add.green() * inv_alpha),
+        GreyScalePixel(original.blue() * alpha + add.blue() * inv_alpha));
   }
 
   inline OneBitPixel blend(OneBitPixel original, RGBPixel add, double alpha) {
