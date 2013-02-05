@@ -231,7 +231,9 @@ class graph_color_ccs(PluginFunction):
     from *colors* with the constraint that segments adjacent in the
     neighborship graph have different colors. Optionally, each segment can
     also be colored uniquely with adjacent segments colored with sufficiently
-    different colors. Reference:
+    different colors.
+
+    Reference:
 
       C. Dalitz, T. Bolten, O. Christion:
       *Color Visualization of 2D Segmentations.* IVAPP 2013
