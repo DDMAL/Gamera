@@ -36,7 +36,7 @@ wx.__version__
 If it is 2.8.12.1 you are golden ponyboy.
  
  
-##Install gamera:
+## Install gamera:
 http://gamera.informatik.hsnr.de/download/index.html
  
 python setup.py build && sudo python setup.py install
